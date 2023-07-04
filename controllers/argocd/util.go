@@ -1374,6 +1374,7 @@ func (r *ReconcileArgoCD) setManagedNamespaces(cr *argoproj.ArgoCD) error {
 	}
 
 	namespaces.Items = append(namespaces.Items, corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: cr.Namespace}})
+	namespaces.Items = filterActiveNamespaces(namespaces.Items)
 	r.ManagedNamespaces = namespaces
 	return nil
 }
@@ -1390,7 +1391,7 @@ func (r *ReconcileArgoCD) setManagedSourceNamespaces(cr *argoproj.ArgoCD) error 
 		return err
 	}
 
-	for _, namespace := range namespaces.Items {
+	for _, namespace := range filterActiveNamespaces(namespaces.Items) {
 		r.ManagedSourceNamespaces[namespace.Name] = ""
 	}
 
@@ -1597,4 +1598,16 @@ func getApplicationSetHTTPServerHost(cr *argoprojv1a1.ArgoCD) string {
 		host = cr.Spec.ApplicationSet.WebhookServer.Host
 	}
 	return host
+}
+
+// filterActiveNamespaces removes namespaces that are being deleted and returns
+// only the active namespaces.
+func filterActiveNamespaces(namespaceList []corev1.Namespace) []corev1.Namespace {
+	activeNamespaces := []corev1.Namespace{}
+	for _, namespace := range namespaceList {
+		if namespace.DeletionTimestamp == nil {
+			activeNamespaces = append(activeNamespaces, namespace)
+		}
+	}
+	return activeNamespaces
 }
