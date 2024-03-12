@@ -139,6 +139,10 @@ type ArgoCDApplicationControllerShardSpec struct {
 	// ClustersPerShard defines the maximum number of clusters managed by each argocd shard
 	// +kubebuilder:validation:Minimum=1
 	ClustersPerShard int32 `json:"clustersPerShard,omitempty"`
+
+	// ShardingStrategy defines the startegy for spreading out the load
+	// It could be one of RoundRobbin, ShardPerNamespace
+	ShardingStrategy string `json:"shardingStrategy,omitempty"`
 }
 
 // ArgoCDApplicationSet defines whether the Argo CD ApplicationSet controller should be installed.

@@ -736,6 +736,13 @@ func (r *ReconcileArgoCD) reconcileStatefulSets(cr *argoproj.ArgoCD, useTLSForRe
 	return nil
 }
 
+func (r *ReconcileArgoCD) reconcileShardsPerNamespace(cr *argoproj.ArgoCD, useTLSForRedis bool) error {
+	if err := r.reconcileApplicationControllerStatefulSet(cr, useTLSForRedis); err != nil {
+		return err
+	}
+	return nil
+}
+
 // triggerStatefulSetRollout will update the label with the given key to trigger a new rollout of the StatefulSet.
 func (r *ReconcileArgoCD) triggerStatefulSetRollout(sts *appsv1.StatefulSet, key string) error {
 	if !argoutil.IsObjectFound(r.Client, sts.Namespace, sts.Name, sts) {
