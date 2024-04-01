@@ -54,13 +54,13 @@ jobs:
         run: |
           crc config set preset okd
           crc config set network-mode user
-          crc oc-env
       - name: Setup the crc
         run: sudo -su $USER crc setup
       - name: Start the crc
         run: sudo -su $USER crc start
       - name: Set Creds
         run: |
+          crc oc-env
           export SERVER_URL=$(crc console --credentials --url -o json | jq -r '.clusterConfig.url')
           export ADMIN_USER=$(crc console --credentials --url -o json | jq -r '.clusterConfig.adminCredentials.username')
           export ADMIN_PASSWORD=$(crc console --credentials --url -o json | jq -r '.clusterConfig.adminCredentials.password')
