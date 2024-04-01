@@ -27,7 +27,7 @@ jobs:
       - name: Download and install CRC
         run: |
           wget "https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/crc/2.33.0/crc-linux-amd64.tar.xz"
-          tar zxvf crc-linux-amd64.tar.xz --directory /usr/local/bin --strip-components=1 crc-linux-2.33.0-amd64/crc
+          tar -xf crc-linux-amd64.tar.xz --directory /usr/local/bin --strip-components=1 crc-linux-2.33.0-amd64/crc
       - name: Testing CRC
         run: |
           which crc
