@@ -61,15 +61,16 @@ jobs:
       - name: Set Creds
         run: |
           eval $(crc oc-env)
-          export SERVER_URL=$(crc console --credentials -o json | jq -r '.clusterConfig.url')
-          export ADMIN_USER=$(crc console --credentials -o json | jq -r '.clusterConfig.adminCredentials.username')
-          export ADMIN_PASSWORD=$(crc console --credentials -o json | jq -r '.clusterConfig.adminCredentials.password')
+
+          echo "OKD_SERVER_URL=$(crc console --credentials -o json | jq -r '.clusterConfig.url')" >> $GITHUB_ENV
+          echo "OKD_ADMIN_USER=$(crc console --credentials -o json | jq -r '.clusterConfig.adminCredentials.username')" >> $GITHUB_ENV
+          echo "OKD_ADMIN_PASSWORD=$(crc console --credentials -o json | jq -r '.clusterConfig.adminCredentials.password')" >> $GITHUB_ENV
       - name: Authenticate and set context
         uses: redhat-actions/oc-login@v1
         with:
-          openshift_server_url: ${{ env.SERVER_URL }}
-          openshift_username: ${{ env.ADMIN_USER }}
-          openshift_password: ${{ env.ADMIN_PASSWORD }}
+          openshift_server_url: ${{ env.OKD_SERVER_URL }}
+          openshift_username: ${{ env.OKD_ADMIN_USER }}
+          openshift_password: ${{ env.OKD_ADMIN_PASSWORD }}
           insecure_skip_tls_verify: true
       - name: Create GitOps Subscription
         run: |
