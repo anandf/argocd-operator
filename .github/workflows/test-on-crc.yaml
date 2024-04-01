@@ -5,7 +5,7 @@ on:
   pull_request: {}
 jobs:
   build:
-    name: Run OKD bundle with crc
+    name: Run E2E Tests on CRC
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -54,7 +54,37 @@ jobs:
         run: |
           crc config set preset okd
           crc config set network-mode user
+          crc oc-env
       - name: Setup the crc
         run: sudo -su $USER crc setup
       - name: Start the crc
         run: sudo -su $USER crc start
+      - name: Set Creds
+        run: |
+          export SERVER_URL=$(crc console --credentials --url -o json | jq -r '.clusterConfig.url')
+          export ADMIN_USER=$(crc console --credentials --url -o json | jq -r '.clusterConfig.adminCredentials.username')
+          export ADMIN_PASSWORD=$(crc console --credentials --url -o json | jq -r '.clusterConfig.adminCredentials.password')
+      - name: Authenticate and set context
+        uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{ env.SERVER_URL }}
+          openshift_username: ${{ env.ADMIN_USER }}
+          openshift_password: ${{ env.ADMIN_PASSWORD }}
+          insecure_skip_tls_verify: true
+      - name: Create GitOps Subscription
+        run: |
+          oc apply -f - <<EOF
+          apiVersion: operators.coreos.com/v1alpha1
+          kind: Subscription
+          metadata:
+            name: openshift-gitops-operator
+            namespace: openshift-operators
+          spec:
+            channel: latest
+            installPlanApproval: Automatic
+            name: openshift-gitops-operator
+            source: redhat-operators
+            sourceNamespace: openshift-marketplace
+          EOF
+          sleep 30
+          oc get pods -n openshift-gitops
