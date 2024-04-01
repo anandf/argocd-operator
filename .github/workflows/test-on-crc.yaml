@@ -24,13 +24,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: "Download CRC"
-          url: "https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/crc/2.33.0/crc-linux-amd64.tar.xz"
+      - name: Download and install CRC
+        run: |
+          wget "https://developers.redhat.com/content-gateway/file/pub/openshift-v4/clients/crc/2.33.0/crc-linux-amd64.tar.xz"
+          tar zxvf crc-linux-amd64.tar.xz --directory /usr/local/bin --strip-components=1 crc-linux-2.33.0-amd64/crc
       - name: Testing CRC
         run: |
-          tar zxvf crc-linux-amd64.tar.xz --directory /usr/local/bin --strip-components=1 crc-linux-2.33.0-amd64/crc 
           which crc
           crc --help
       - name: Install required virtualization software
