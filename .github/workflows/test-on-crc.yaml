@@ -60,10 +60,10 @@ jobs:
         run: sudo -su $USER crc start
       - name: Set Creds
         run: |
-          crc oc-env
-          export SERVER_URL=$(crc console --credentials --url -o json | jq -r '.clusterConfig.url')
-          export ADMIN_USER=$(crc console --credentials --url -o json | jq -r '.clusterConfig.adminCredentials.username')
-          export ADMIN_PASSWORD=$(crc console --credentials --url -o json | jq -r '.clusterConfig.adminCredentials.password')
+          eval $(crc oc-env)
+          export SERVER_URL=$(crc console --credentials -o json | jq -r '.clusterConfig.url')
+          export ADMIN_USER=$(crc console --credentials -o json | jq -r '.clusterConfig.adminCredentials.username')
+          export ADMIN_PASSWORD=$(crc console --credentials -o json | jq -r '.clusterConfig.adminCredentials.password')
       - name: Authenticate and set context
         uses: redhat-actions/oc-login@v1
         with:
