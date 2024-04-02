@@ -61,11 +61,9 @@ jobs:
       - name: Set Creds
         run: |
           sudo -su $USER crc oc-env
-          sudo -su $USER  crc console --credentials -o json > /tmp/creds.json
-          echo "OKD_SERVER_URL=$(cat /tmp/creds.json | jq -r '.clusterConfig.url')" >> $GITHUB_ENV
-          echo "OKD_ADMIN_USER=$(cat /tmp/creds.json | jq -r '.clusterConfig.adminCredentials.username')" >> $GITHUB_ENV
-          echo "OKD_ADMIN_PASSWORD=$(cat /tmp/creds.json | jq -r '.clusterConfig.adminCredentials.password')" >> $GITHUB_ENV
-          rm -f /tmp/creds.json
+          echo "OKD_SERVER_URL=https://api.crc.testing:6443" >> $GITHUB_ENV
+          echo "OKD_ADMIN_USER=kubeadmin" >> $GITHUB_ENV
+          echo "OKD_ADMIN_PASSWORD=$(cat $HOME/.crc/machines/crc/kubeadmin-password)" >> $GITHUB_ENV
       - name: Authenticate and set context
         uses: redhat-actions/oc-login@v1
         with:
