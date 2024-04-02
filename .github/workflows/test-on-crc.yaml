@@ -60,12 +60,14 @@ jobs:
         run: sudo -su $USER crc start
       - name: Set Creds
         run: |
-          eval $(crc oc-env)
-          crc console --credentials -o json
-          echo "OKD_SERVER_URL=$(crc console --credentials -o json | jq -r '.clusterConfig.url')" >> $GITHUB_ENV
-          echo "OKD_ADMIN_USER=$(crc console --credentials -o json | jq -r '.clusterConfig.adminCredentials.username')" >> $GITHUB_ENV
-          echo "OKD_ADMIN_PASSWORD=$(crc console --credentials -o json | jq -r '.clusterConfig.adminCredentials.password')" >> $GITHUB_ENV
+          sudo usermod –a –G libvirt $USER
+          sudo -su $USER crc oc-env
+          sudo -su $USER  crc console --credentials -o json > /tmp/creds.json
+          echo "OKD_SERVER_URL=$(sudo -su $USER  cat /tmp/creds.json | jq -r '.clusterConfig.url')" >> $GITHUB_ENV
+          echo "OKD_ADMIN_USER=$(sudo -su $USER  cat /tmp/creds.json | jq -r '.clusterConfig.adminCredentials.username')" >> $GITHUB_ENV
+          echo "OKD_ADMIN_PASSWORD=$(sudo -su $USER  cat /tmp/creds.json | jq -r '.clusterConfig.adminCredentials.password')" >> $GITHUB_ENV
           cat $GITHUB_ENV
+          sudo -su $USER rm -f /tmp/creds.json
       - name: Authenticate and set context
         uses: redhat-actions/oc-login@v1
         with:
