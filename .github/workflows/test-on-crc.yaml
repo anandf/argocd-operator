@@ -64,13 +64,7 @@ jobs:
           echo "OKD_SERVER_URL=https://api.crc.testing:6443" >> $GITHUB_ENV
           echo "OKD_ADMIN_USER=kubeadmin" >> $GITHUB_ENV
           echo "OKD_ADMIN_PASSWORD=$(cat $HOME/.crc/machines/crc/kubeadmin-password)" >> $GITHUB_ENV
-      - name: Authenticate and set context
-        uses: redhat-actions/oc-login@v1
-        with:
-          openshift_server_url: ${{ env.OKD_SERVER_URL }}
-          openshift_username: ${{ env.OKD_ADMIN_USER }}
-          openshift_password: ${{ env.OKD_ADMIN_PASSWORD }}
-          insecure_skip_tls_verify: true
+          echo "KUBECONFIG=$HOME/.crc/machines/crc/kubeconfig" >> $GITHUB_ENV
       - name: Create GitOps Subscription
         run: |
           oc apply -f - <<EOF
