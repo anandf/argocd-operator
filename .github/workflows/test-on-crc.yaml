@@ -61,9 +61,6 @@ jobs:
       - name: Set Creds
         run: |
           sudo -su $USER crc oc-env
-          echo "OKD_SERVER_URL=https://api.crc.testing:6443" >> $GITHUB_ENV
-          echo "OKD_ADMIN_USER=kubeadmin" >> $GITHUB_ENV
-          echo "OKD_ADMIN_PASSWORD=$(cat $HOME/.crc/machines/crc/kubeadmin-password)" >> $GITHUB_ENV
           echo "KUBECONFIG=$HOME/.crc/machines/crc/kubeconfig" >> $GITHUB_ENV
       - name: Create GitOps Subscription
         run: |
@@ -80,5 +77,6 @@ jobs:
             source: redhat-operators
             sourceNamespace: openshift-marketplace
           EOF
-          sleep 30
+          sleep 300
           oc get pods -n openshift-gitops
+          oc rollout status deployment openshift-gitops-argocd-server -n openshift-gitops
