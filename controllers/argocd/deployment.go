@@ -1094,6 +1094,10 @@ func (r *ReconcileArgoCD) reconcileServerDeployment(cr *argoproj.ArgoCD, useTLSF
 	serverEnv := cr.Spec.Server.Env
 	serverEnv = argoutil.EnvMerge(serverEnv, proxyEnvVars(), false)
 	AddSeccompProfileForOpenShift(r.Client, &deploy.Spec.Template.Spec)
+	if deploy.Spec.Template.Annotations == nil {
+		deploy.Spec.Template.Annotations = map[string]string{}
+	}
+	deploy.Spec.Template.Annotations[common.ArgoCDKeyDexOAuthRedirectURI] = r.getDexOAuthRedirectURI(cr)
 	deploy.Spec.Template.Spec.Containers = []corev1.Container{{
 		Command:         getArgoServerCommand(cr, useTLSForRedis),
 		Image:           getArgoContainerImage(cr),
@@ -1246,6 +1250,13 @@ func (r *ReconcileArgoCD) reconcileServerDeployment(cr *argoproj.ArgoCD, useTLSF
 				existing.Spec.Replicas = deploy.Spec.Replicas
 				changed = true
 			}
+		}
+		if !reflect.DeepEqual(deploy.Spec.Template.Annotations, existing.Spec.Template.Annotations) {
+			if existing.Spec.Template.Annotations == nil {
+				existing.Spec.Template.Annotations = map[string]string{}
+			}
+			existing.Spec.Template.Annotations[common.ArgoCDKeyDexOAuthRedirectURI] = r.getDexOAuthRedirectURI(cr)
+			changed = true
 		}
 		if changed {
 			return r.Client.Update(context.TODO(), existing)
