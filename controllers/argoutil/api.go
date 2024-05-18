@@ -16,6 +16,7 @@ package argoutil
 
 import (
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
@@ -43,6 +44,12 @@ func VerifyAPI(group string, version string) (bool, error) {
 	}
 
 	if err = discovery.ServerSupportsVersion(k8s, gv); err != nil {
+		if !strings.Contains(err.Error(), "server does not support API version") {
+			// unexpected error, not able to verify if the API is supported.
+			log.Info(fmt.Sprintf("%s/%s error checking API support: %s", group, version, err.Error()))
+			return false, err
+		}
+		log.Info(fmt.Sprintf("%s/%s API not supported: %s", group, version, err.Error()))
 		// error, API not available
 		return false, nil
 	}
