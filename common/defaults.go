@@ -18,6 +18,12 @@ const (
 	// ArgoCDApplicationControllerComponent is the name of the application controller control plane component
 	ArgoCDApplicationControllerComponent = "argocd-application-controller"
 
+	// ArgoCDApplicationControllerComponentView is the name of aggregated ClusterRole to configure view permissions for the application controller control plane component
+	ArgoCDApplicationControllerComponentView = "argocd-application-controller-view"
+
+	// ArgoCDApplicationControllerComponentAdmin is the name of aggregated ClusterRole to configure admin permissions for the application controller control plane component
+	ArgoCDApplicationControllerComponentAdmin = "argocd-application-controller-admin"
+
 	// ArgoCDApplicationControllerDefaultShardReplicas is the default number of replicas that the ArgoCD Application Controller Should Use
 	ArgocdApplicationControllerDefaultReplicas = 1
 
@@ -64,7 +70,7 @@ const (
 	ArgoCDDefaultArgoImage = "quay.io/argoproj/argocd"
 
 	// ArgoCDDefaultArgoVersion is the Argo CD container image digest to use when version not specified.
-	ArgoCDDefaultArgoVersion = "sha256:8576d347f30fa4c56a0129d1c0a0f5ed1e75662f0499f1ed7e917c405fd909dc" // v2.9.2
+	ArgoCDDefaultArgoVersion = "sha256:7f82e7eec131866c3cbd91e5035381d62bd9318269cd3d16e6e2d42ede402292" // v2.11.6
 
 	// ArgoCDDefaultBackupKeyLength is the length of the generated default backup key.
 	ArgoCDDefaultBackupKeyLength = 32
@@ -122,7 +128,7 @@ const (
 	ArgoCDDefaultExportJobImage = "quay.io/argoprojlabs/argocd-operator-util"
 
 	// ArgoCDDefaultExportJobVersion is the export job container image tag to use when not specified.
-	ArgoCDDefaultExportJobVersion = "sha256:6f80965a2bef1c80875be0995b18d9be5a6ad4af841cbc170ed3c60101a7deb2" // 0.5.0
+	ArgoCDDefaultExportJobVersion = "sha256:463185c62f35e73e287a859c42926fea7c23cecd2db7f94675f4d46629d4b4d8" // 0.11.0
 
 	// ArgoCDDefaultExportLocalCapicity is the default capacity to use for local export.
 	ArgoCDDefaultExportLocalCapicity = "2Gi"
@@ -274,6 +280,15 @@ gitlab.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsj2bNKTBSpIYDEGk9KxsGh3mySTRgM
 ssh.dev.azure.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7Hr1oTWqNqOlzGJOfGJ4NakVyIzf1rXYd4d7wo6jBlkLvCA4odBlL0mDUyZ0/QUfTTqeu+tm22gOsv+VrVTMk6vwRU75gY/y9ut5Mb3bR5BV58dKXyq9A9UeB5Cakehn5Zgm6x1mKoVyf+FFn26iYqXJRgzIZZcZ5V6hrE0Qg39kZm4az48o0AUbf6Sp4SLdvnuMa2sVNwHBboS7EJkm57XQPVU3/QpyNLHbWDdzwtrlS+ez30S3AdYhLKEOxAG8weOnyrtLJAUen9mTkol8oII1edf7mWWbWVf0nBmly21+nZcmCTISQBtdcyPaEno7fFQMDD26/s0lfKob4Kw8H
 vs-ssh.visualstudio.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7Hr1oTWqNqOlzGJOfGJ4NakVyIzf1rXYd4d7wo6jBlkLvCA4odBlL0mDUyZ0/QUfTTqeu+tm22gOsv+VrVTMk6vwRU75gY/y9ut5Mb3bR5BV58dKXyq9A9UeB5Cakehn5Zgm6x1mKoVyf+FFn26iYqXJRgzIZZcZ5V6hrE0Qg39kZm4az48o0AUbf6Sp4SLdvnuMa2sVNwHBboS7EJkm57XQPVU3/QpyNLHbWDdzwtrlS+ez30S3AdYhLKEOxAG8weOnyrtLJAUen9mTkol8oII1edf7mWWbWVf0nBmly21+nZcmCTISQBtdcyPaEno7fFQMDD26/s0lfKob4Kw8H
 `
+	// RedisDefaultAdminPasswordLength is the length of the generated default redis admin password.
+	RedisDefaultAdminPasswordLength = 16
+
+	// RedisDefaultAdminPasswordNumDigits is the number of digits to use for the generated default redis admin password.
+	RedisDefaultAdminPasswordNumDigits = 5
+
+	// RedisDefaultAdminPasswordNumSymbols is the number of symbols to use for the generated default redis admin password.
+	RedisDefaultAdminPasswordNumSymbols = 0
+
 	// OperatorMetricsPort is the port that is used to expose default controller-runtime metrics for the operator pod.
 	OperatorMetricsPort = 8080
 

@@ -29,10 +29,10 @@ spec:
 ```
 
 The following default value of images could be overridden by setting the environment variables:
+
 | Environment Variable | Default Value |
 | --- | --- |
 | `ARGOCD_IMAGE` | [quay.io/argoproj/argocd](quay.io/argoproj/argocd) |
-| `ARGOCD_REPOSERVER_IMAGE` | [quay.io/argoproj/argocd](quay.io/argoproj/argocd) |
 | `ARGOCD_DEX_IMAGE` | [ghcr.io/dexidp/dex](ghcr.io/dexidp/dex) |
 | `ARGOCD_KEYCLOAK_IMAGE` | [quay.io/keycloak/keycloak](quay.io/keycloak/keycloak) |
 | `ARGOCD_REDIS_IMAGE` | redis |

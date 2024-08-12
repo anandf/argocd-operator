@@ -4,6 +4,6 @@ metadata:
   name: argocd-catalog
 spec:
   sourceType: grpc
-  image: quay.io/argoprojlabs/argocd-operator-registry@sha256:dcf6d07ed5c8b840fb4a6e9019eacd88cd0913bc3c8caa104d3414a2e9972002 # replace with your index image
+  image: quay.io/argoprojlabs/argocd-operator-registry@sha256:64e4fe0bf7b3dd5e89689d750fb63d7e3111068f18a7ed8656265cb1775f3b68 # 0.11.0
   displayName: Argo CD Operators
   publisher: Argo CD Community

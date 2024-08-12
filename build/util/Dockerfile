@@ -1,8 +1,8 @@
-# Argo CD v2.9.2
-FROM quay.io/argoproj/argocd@sha256:8576d347f30fa4c56a0129d1c0a0f5ed1e75662f0499f1ed7e917c405fd909dc as argocd
+# Argo CD v2.11.6
+FROM quay.io/argoproj/argocd@sha256:7f82e7eec131866c3cbd91e5035381d62bd9318269cd3d16e6e2d42ede402292 as argocd
 
 # Final Image
-FROM docker.io/library/ubuntu:22.04
+FROM docker.io/library/ubuntu:24.04
 
 USER root
 
@@ -17,12 +17,18 @@ RUN groupadd -g $ARGOCD_USER_ID argocd && \
     apt-get update && \
     apt-get dist-upgrade -y && \
     apt-get install -y \
-    git git-lfs tini curl python3-pip gpg tzdata && \
+    git git-lfs tini curl python3-pip gpg tzdata unzip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install the AWS CLI
-RUN pip3 install awscli
+# Create a symlink for python to point to python3
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf awscliv2.zip aws
 
 # Install the Microsoft Azure CLI
 RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash && \

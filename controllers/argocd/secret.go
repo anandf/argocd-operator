@@ -27,7 +27,7 @@ import (
 	"time"
 
 	argopass "github.com/argoproj/argo-cd/v2/util/password"
-	tlsutil "github.com/operator-framework/operator-sdk/pkg/tls"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
 	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
 	"github.com/argoproj-labs/argocd-operator/common"
@@ -111,11 +111,12 @@ func newCertificateSecret(suffix string, caCert *x509.Certificate, caKey *rsa.Pr
 		return nil, err
 	}
 
-	cfg := &tlsutil.CertConfig{
-		CertName:     secret.Name,
-		CertType:     tlsutil.ClientAndServingCert,
-		CommonName:   secret.Name,
-		Organization: []string{cr.ObjectMeta.Namespace},
+	cfg := &certmanagerv1.CertificateSpec{
+		SecretName: secret.Name,
+		CommonName: secret.Name,
+		Subject: &certmanagerv1.X509Subject{
+			Organizations: []string{cr.ObjectMeta.Namespace},
+		},
 	}
 
 	dnsNames := []string{
@@ -278,6 +279,10 @@ func (r *ReconcileArgoCD) reconcileClusterSecrets(cr *argoproj.ArgoCD) error {
 		return err
 	}
 
+	if err := r.reconcileRedisInitialPasswordSecret(cr); err != nil {
+		return err
+	}
+
 	if err := r.reconcileClusterCASecret(cr); err != nil {
 		return err
 	}
@@ -313,9 +318,10 @@ func (r *ReconcileArgoCD) reconcileExistingArgoSecret(cr *argoproj.ArgoCD, secre
 		secret.Data[common.ArgoCDKeyServerSecretKey] = sessionKey
 	}
 
+	// reset the value to default only when secret.data field is nil
 	if hasArgoAdminPasswordChanged(secret, clusterSecret) {
 		pwBytes, ok := clusterSecret.Data[common.ArgoCDKeyAdminPassword]
-		if ok {
+		if ok && secret.Data[common.ArgoCDKeyAdminPassword] == nil {
 			hashedPassword, err := argopass.HashPassword(strings.TrimRight(string(pwBytes), "\n"))
 			if err != nil {
 				return err
@@ -645,4 +651,27 @@ func (r *ReconcileArgoCD) getClusterSecrets(cr *argoproj.ArgoCD) (*corev1.Secret
 	}
 
 	return clusterSecrets, nil
+}
+
+// reconcileRedisInitialPasswordSecret will ensure that the redis Secret is present for the cluster.
+func (r *ReconcileArgoCD) reconcileRedisInitialPasswordSecret(cr *argoproj.ArgoCD) error {
+	secret := argoutil.NewSecretWithSuffix(cr, "redis-initial-password")
+	if argoutil.IsObjectFound(r.Client, cr.Namespace, secret.Name, secret) {
+		return nil // Secret found, do nothing
+	}
+
+	redisInitialPassword, err := generateRedisAdminPassword()
+	if err != nil {
+		return err
+	}
+
+	secret.Data = map[string][]byte{
+		"immutable":                   []byte("true"),
+		common.ArgoCDKeyAdminPassword: redisInitialPassword,
+	}
+
+	if err := controllerutil.SetControllerReference(cr, secret, r.Scheme); err != nil {
+		return err
+	}
+	return r.Client.Create(context.TODO(), secret)
 }

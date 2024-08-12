@@ -31,8 +31,6 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	templatev1 "github.com/openshift/api/template/v1"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -42,6 +40,8 @@ import (
 	"github.com/argoproj-labs/argocd-operator/controllers/argocdexport"
 
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	notificationsConfig "github.com/argoproj-labs/argocd-operator/controllers/notificationsconfiguration"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -78,7 +78,6 @@ func init() {
 func printVersion() {
 	setupLog.Info(fmt.Sprintf("Go Version: %s", goruntime.Version()))
 	setupLog.Info(fmt.Sprintf("Go OS/Arch: %s/%s", goruntime.GOOS, goruntime.GOARCH))
-	setupLog.Info(fmt.Sprintf("Version of operator-sdk: %v", sdkVersion.Version))
 	setupLog.Info(fmt.Sprintf("Version of %s-operator: %v", common.ArgoCDAppName, version.Version))
 }
 
@@ -159,7 +158,7 @@ func main() {
 		setupLog.Info("unable to inspect cluster")
 	}
 
-	namespace, err := k8sutil.GetWatchNamespace()
+	namespace, err := getWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "Failed to get watch namespace, defaulting to all namespace mode")
 	}
@@ -225,7 +224,8 @@ func main() {
 	}
 
 	// Setup Schemes for SSO if template instance is available.
-	if argocd.IsTemplateAPIAvailable() {
+	if argocd.CanUseKeycloakWithTemplate() {
+		setupLog.Info("Keycloak instance can be managed using OpenShift Template")
 		if err := templatev1.Install(mgr.GetScheme()); err != nil {
 			setupLog.Error(err, "")
 			os.Exit(1)
@@ -238,6 +238,8 @@ func main() {
 			setupLog.Error(err, "")
 			os.Exit(1)
 		}
+	} else {
+		setupLog.Info("Keycloak instance cannot be managed using OpenShift Template, as DeploymentConfig/Template API is not present")
 	}
 
 	if err = (&argocd.ReconcileArgoCD{
@@ -253,6 +255,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ArgoCDExport")
+		os.Exit(1)
+	}
+	if err = (&notificationsConfig.NotificationsConfigurationReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "NotificationsConfiguration")
 		os.Exit(1)
 	}
 
@@ -282,7 +291,7 @@ func main() {
 }
 
 func getDefaultWatchedNamespacesCacheOptions() map[string]cache.Config {
-	watchedNamespaces, err := k8sutil.GetWatchNamespace()
+	watchedNamespaces, err := getWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "Failed to get watch namespace, defaulting to all namespace mode")
 		return nil
@@ -301,4 +310,18 @@ func getDefaultWatchedNamespacesCacheOptions() map[string]cache.Config {
 	}
 
 	return defaultNamespacesCacheConfig
+}
+
+// getWatchNamespace returns the Namespace the operator should be watching for changes
+func getWatchNamespace() (string, error) {
+	// WatchNamespaceEnvVar is the constant for env variable WATCH_NAMESPACE
+	// which specifies the Namespace to watch.
+	// An empty value means the operator is running with cluster scope.
+	var watchNamespaceEnvVar = "WATCH_NAMESPACE"
+
+	ns, found := os.LookupEnv(watchNamespaceEnvVar)
+	if !found {
+		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
+	}
+	return ns, nil
 }

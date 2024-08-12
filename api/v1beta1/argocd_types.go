@@ -79,6 +79,10 @@ type ArgoCDApplicationControllerProcessorsSpec struct {
 
 // ArgoCDApplicationControllerSpec defines the options for the ArgoCD Application Controller component.
 type ArgoCDApplicationControllerSpec struct {
+
+	// InitContainers defines the list of initialization containers for the Application Controller component.
+	InitContainers []corev1.Container `json:"initContainers,omitempty"`
+
 	// Processors contains the options for the Application Controller processors.
 	Processors ArgoCDApplicationControllerProcessorsSpec `json:"processors,omitempty"`
 
@@ -106,11 +110,24 @@ type ArgoCDApplicationControllerSpec struct {
 	// Sharding contains the options for the Application Controller sharding configuration.
 	Sharding ArgoCDApplicationControllerShardSpec `json:"sharding,omitempty"`
 
+	// SidecarContainers defines the list of sidecar containers for the controller deployment
+	SidecarContainers []corev1.Container `json:"sidecarContainers,omitempty"`
+
 	// Env lets you specify environment for application controller pods
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// Enabled is the flag to enable the Application Controller during ArgoCD installation. (optional, default `true`)
 	Enabled *bool `json:"enabled,omitempty"`
+
+	// Extra Command arguments allows users to pass command line arguments to controller workload. They get added to default command line arguments provided
+	// by the operator.
+	// Please note that the command line arguments provided as part of ExtraCommandArgs will not overwrite the default command line arguments.
+	ExtraCommandArgs []string `json:"extraCommandArgs,omitempty"`
+	// Volumes adds volumes to the Argo CD Controller container.
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// VolumeMounts adds volumeMounts to the Argo CD Controller container.
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 func (a *ArgoCDApplicationControllerSpec) IsEnabled() bool {
@@ -328,6 +345,9 @@ type ArgoCDKeycloakSpec struct {
 
 	// VerifyTLS set to false disables strict TLS validation.
 	VerifyTLS *bool `json:"verifyTLS,omitempty"`
+
+	// Host is the hostname to use for Ingress/Route resources.
+	Host string `json:"host,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -566,6 +586,9 @@ type ArgoCDServerSpec struct {
 	// GRPC defines the state for the Argo CD Server GRPC options.
 	GRPC ArgoCDServerGRPCSpec `json:"grpc,omitempty"`
 
+	// InitContainers defines the list of initialization containers for the Argo CD Server component.
+	InitContainers []corev1.Container `json:"initContainers,omitempty"`
+
 	// Host is the hostname to use for Ingress/Route resources.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Host",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:fieldGroup:Server","urn:alm:descriptor:com.tectonic.ui:text"}
 	Host string `json:"host,omitempty"`
@@ -596,6 +619,9 @@ type ArgoCDServerSpec struct {
 	// Service defines the options for the Service backing the ArgoCD Server component.
 	Service ArgoCDServerServiceSpec `json:"service,omitempty"`
 
+	// SidecarContainers defines the list of sidecar containers for the server deployment
+	SidecarContainers []corev1.Container `json:"sidecarContainers,omitempty"`
+
 	// Env lets you specify environment for API server pods
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
@@ -606,6 +632,12 @@ type ArgoCDServerSpec struct {
 
 	// Enabled is the flag to enable ArgoCD Server during ArgoCD installation. (optional, default `true`)
 	Enabled *bool `json:"enabled,omitempty"`
+
+	// Volumes adds volumes to the Argo CD Server container.
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// VolumeMounts adds volumeMounts to the Argo CD Server container.
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 func (a *ArgoCDServerSpec) IsEnabled() bool {
@@ -691,6 +723,8 @@ type KustomizeVersionSpec struct {
 type ArgoCDMonitoringSpec struct {
 	// Enabled defines whether workload status monitoring is enabled for this instance or not
 	Enabled bool `json:"enabled"`
+	// DisableMetrics field can be used to enable or disable the collection of Metrics on Openshift
+	DisableMetrics *bool `json:"disableMetrics,omitempty"`
 }
 
 // ArgoCDNodePlacementSpec is used to specify NodeSelector and Tolerations for Argo CD workloads
@@ -852,6 +886,12 @@ type ArgoCDSpec struct {
 
 	// Banner defines an additional banner to be displayed in Argo CD UI
 	Banner *Banner `json:"banner,omitempty"`
+
+	// DefaultClusterScopedRoleDisabled will disable creation of default ClusterRoles for a cluster scoped instance.
+	DefaultClusterScopedRoleDisabled bool `json:"defaultClusterScopedRoleDisabled,omitempty"`
+
+	// AggregatedClusterRoles will allow users to have aggregated ClusterRoles for a cluster scoped instance.
+	AggregatedClusterRoles bool `json:"aggregatedClusterRoles,omitempty"`
 }
 
 // ArgoCDStatus defines the observed state of ArgoCD
@@ -991,10 +1031,11 @@ func (argocd *ArgoCD) IsDeletionFinalizerPresent() bool {
 	return false
 }
 
-// WantsAutoTLS returns true if user configured a route with reencryption
-// termination policy.
+// WantsAutoTLS returns true if:
+// 1. user has configured a route with reencrypt.
+// 2. user has not configured TLS and we default to reencrypt.
 func (s *ArgoCDServerSpec) WantsAutoTLS() bool {
-	return s.Route.TLS != nil && s.Route.TLS.Termination == routev1.TLSTerminationReencrypt
+	return s.Route.TLS == nil || s.Route.TLS.Termination == routev1.TLSTerminationReencrypt
 }
 
 // WantsAutoTLS returns true if the repository server configuration has set
