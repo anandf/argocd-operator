@@ -135,6 +135,14 @@ func getKeycloakContainerImage(cr *argoproj.ArgoCD) string {
 	return argoutil.CombineImageTag(img, tag)
 }
 
+// getKeycloakArgs will return the arguments that needs to be passed to the RHBK container image when running in an OCP cluster. It will return an empty slice when running in non OCP cluster.
+func getKeycloakArgs() []string {
+	if CanUseKeycloakWithTemplate() {
+		return []string{"start"}
+	}
+	return []string{}
+}
+
 func getKeycloakConfigMapTemplate(ns string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -216,6 +224,7 @@ func getKeycloakContainer(cr *argoproj.ArgoCD) corev1.Container {
 	return corev1.Container{
 		Env:             proxyEnvVars(envVars...),
 		Image:           getKeycloakContainerImage(cr),
+		Args:            getKeycloakArgs(),
 		ImagePullPolicy: "Always",
 		LivenessProbe: &corev1.Probe{
 			TimeoutSeconds: 240,
