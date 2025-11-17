@@ -147,12 +147,8 @@ func (r *ReconcileArgoCD) reconcileRedisStatefulSet(cr *argoproj.ArgoCD) error {
 
 	ss.Spec.Template.Spec.Containers = []corev1.Container{
 		{
-			Args: []string{
-				"/data/conf/redis.conf",
-			},
-			Command: []string{
-				"redis-server",
-			},
+			Args:            getArgsForRedisHAServer(),
+			Command:         getCommandForRedisHAServer(),
 			Env:             redisEnv,
 			Image:           getRedisHAContainerImage(cr),
 			ImagePullPolicy: argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy),
@@ -211,9 +207,7 @@ func (r *ReconcileArgoCD) reconcileRedisStatefulSet(cr *argoproj.ArgoCD) error {
 			},
 		},
 		{
-			Args: []string{
-				"/data/conf/sentinel.conf",
-			},
+			Args: getArgsForHARedisSentinelSideCar(),
 			Command: []string{
 				"redis-sentinel",
 			},
@@ -296,9 +290,7 @@ func (r *ReconcileArgoCD) reconcileRedisStatefulSet(cr *argoproj.ArgoCD) error {
 	}
 
 	ss.Spec.Template.Spec.InitContainers = []corev1.Container{{
-		Args: []string{
-			"/readonly-config/init.sh",
-		},
+		Args: getArgsForHARedisInitContainer(),
 		Command: []string{
 			"sh",
 		},
@@ -414,10 +406,6 @@ func (r *ReconcileArgoCD) reconcileRedisStatefulSet(cr *argoproj.ArgoCD) error {
 
 	ss.Spec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{
 		Type: appsv1.RollingUpdateStatefulSetStrategyType,
-	}
-
-	if err := applyReconcilerHook(cr, ss, ""); err != nil {
-		return err
 	}
 
 	existing := newStatefulSetWithSuffix("redis-ha-server", "redis", cr)

@@ -459,6 +459,58 @@ func getRedisHAContainerImage(cr *argoproj.ArgoCD) string {
 	return argoutil.CombineImageTag(img, tag)
 }
 
+// getArgsForRedisHAServer returns the arguments required for running the Redis HA server container image.
+// For OpenShift, we use a custom build of Redis provided by Red Hat
+// which requires additional args in comparison to stock redis.
+func getArgsForRedisHAServer() []string {
+	if IsOpenShiftCluster() {
+		return []string{
+			"redis-server",
+			"/data/conf/redis.conf",
+		}
+	}
+	return []string{
+		"/data/conf/redis.conf",
+	}
+}
+
+// getCommandForRedisHAServer returns the command to be invoked when running the Redis HA server container image.
+func getCommandForRedisHAServer() []string {
+	return []string{
+		"redis-server",
+	}
+}
+
+// getArgsForHARedisSentinel returns arguments to be used for Redis Sentinel
+// For OpenShift, we use a custom build of Redis provided by Red Hat
+// which requires additional args in comparison to stock redis.
+func getArgsForHARedisSentinelSideCar() []string {
+	if IsOpenShiftCluster() {
+		return []string{
+			"redis-sentinel",
+			"/data/conf/sentinel.conf",
+		}
+	}
+	return []string{
+		"/data/conf/sentinel.conf",
+	}
+}
+
+// getArgsForHARedisInitContainer returns the arguments to be used for Redis Init container.
+// For OpenShift, we use a custom build of Redis provided by Red Hat
+// which requires additional args in comparison to stock redis.
+func getArgsForHARedisInitContainer() []string {
+	if IsOpenShiftCluster() {
+		return []string{
+			"sh",
+			"/readonly-config/init.sh",
+		}
+	}
+	return []string{
+		"/readonly-config/init.sh",
+	}
+}
+
 // getRedisHAProxyAddress will return the Redis HA Proxy service address for the given ArgoCD.
 func getRedisHAProxyAddress(cr *argoproj.ArgoCD) string {
 	return fqdnServiceRef("redis-ha-haproxy", common.ArgoCDDefaultRedisPort, cr)
@@ -484,6 +536,35 @@ func getRedisHAProxyContainerImage(cr *argoproj.ArgoCD) string {
 	}
 
 	return argoutil.CombineImageTag(img, tag)
+}
+
+// getCommandForRedisHAProxy will return the command args to be used for HAProxy Image.
+// For OpenShift, we use a custom build of haproxy provided by Red Hat
+// which requires a command as opposed to args in stock haproxy.
+func getCommandForRedisHAProxy() []string {
+	if IsOpenShiftCluster() {
+		return []string{
+			"haproxy",
+			"-f",
+			"/usr/local/etc/haproxy/haproxy.cfg",
+		}
+	}
+	return []string{}
+}
+
+// getCapabilitiesForRedisHAProxy will return the security capabilities for HAProxy Image
+func getCapabilitiesForRedisHAProxy() *corev1.Capabilities {
+	capabilities := &corev1.Capabilities{
+		Drop: []corev1.Capability{
+			"ALL",
+		},
+	}
+	if IsOpenShiftCluster() {
+		capabilities.Add = []corev1.Capability{
+			"NET_BIND_SERVICE",
+		}
+	}
+	return capabilities
 }
 
 // getRedisInitScript will load the redis init script from a template on disk for the given ArgoCD.

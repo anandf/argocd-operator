@@ -1,0 +1,79 @@
+<mxfile host="65bd71144e">
+    <diagram id="cw7c3WQETObsaYbm31Jj" name="Proposed Architecture">
+        <mxGraphModel dx="1897" dy="802" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-1" value="gitops-operator-bundle&amp;nbsp;&lt;div&gt;ClusterServiceVersion(CSV)&lt;/div&gt;" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.rect;fillColor2=none;strokeWidth=1;size=20;indent=5;fillColor=none;movableLabel=1;" parent="1" vertex="1">
+                    <mxGeometry x="-40" y="220" width="550" height="290" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-2" value="Argo CD CRDs" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.rect;fillColor2=none;strokeWidth=1;size=20;indent=5;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="-20" y="416" width="120" height="64" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-3" value="GitOps CRD" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.rect;fillColor2=none;strokeWidth=1;size=20;indent=5;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="370" y="410" width="120" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-4" value="Argo Rollouts CRD" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.rect;fillColor2=none;strokeWidth=1;size=20;indent=5;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="190" y="410" width="120" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-6" value="argocd-operator" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;kubernetesLabel=1;prIcon=deploy" parent="1" vertex="1">
+                    <mxGeometry x="-10.000000000000028" y="331" width="50" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-17" value="argo-cd" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=center;strokeColor=none;fillColor=#00BEF2;shape=mxgraph.azure.cloud_service_package_file;" parent="1" vertex="1">
+                    <mxGeometry x="79.99999999999997" y="338" width="30" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-19" style="edgeStyle=none;html=1;exitX=0.995;exitY=0.63;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.76;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="H2JLUIgAQ1RTAKsnNVHl-6" target="H2JLUIgAQ1RTAKsnNVHl-17" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-21" value="rollouts-manager" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;kubernetesLabel=1;prIcon=deploy" parent="1" vertex="1">
+                    <mxGeometry x="223.85999999999996" y="338" width="50" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-23" value="gitops-operator" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;kubernetesLabel=1;prIcon=deploy" parent="1" vertex="1">
+                    <mxGeometry x="370" y="338" width="50" height="48" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-24" value="GitOps API" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=center;strokeColor=none;fillColor=#00BEF2;shape=mxgraph.azure.cloud_service_package_file;" parent="1" vertex="1">
+                    <mxGeometry x="457.71" y="345" width="30" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-28" style="edgeStyle=none;html=1;exitX=0.995;exitY=0.63;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.76;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="H2JLUIgAQ1RTAKsnNVHl-23" target="H2JLUIgAQ1RTAKsnNVHl-24" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-32" value="" style="group" parent="1" vertex="1" connectable="0">
+                    <mxGeometry y="425" width="57.70999999999998" height="51" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-7" value="`" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="H2JLUIgAQ1RTAKsnNVHl-32" vertex="1">
+                    <mxGeometry width="35.42" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-11" value="" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="H2JLUIgAQ1RTAKsnNVHl-32" vertex="1">
+                    <mxGeometry x="10" y="10" width="35.42" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-12" value="" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="H2JLUIgAQ1RTAKsnNVHl-32" vertex="1">
+                    <mxGeometry x="22.289999999999992" y="17" width="35.42" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-35" value="" style="group" parent="1" vertex="1" connectable="0">
+                    <mxGeometry x="220" y="420" width="57.70999999999998" height="51" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-36" value="`" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="H2JLUIgAQ1RTAKsnNVHl-35" vertex="1">
+                    <mxGeometry width="35.42" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-37" value="" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="H2JLUIgAQ1RTAKsnNVHl-35" vertex="1">
+                    <mxGeometry x="10" y="10" width="35.42" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="H2JLUIgAQ1RTAKsnNVHl-38" value="" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="H2JLUIgAQ1RTAKsnNVHl-35" vertex="1">
+                    <mxGeometry x="22.289999999999992" y="17" width="35.42" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="pf6YN35SmiOTDif6_2u4-1" value="" style="group" parent="1" vertex="1" connectable="0">
+                    <mxGeometry x="401.15" y="414.5" width="57.70999999999998" height="51" as="geometry"/>
+                </mxCell>
+                <mxCell id="pf6YN35SmiOTDif6_2u4-2" value="`" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="pf6YN35SmiOTDif6_2u4-1" vertex="1">
+                    <mxGeometry width="35.42" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="pf6YN35SmiOTDif6_2u4-3" value="" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="pf6YN35SmiOTDif6_2u4-1" vertex="1">
+                    <mxGeometry x="10" y="10" width="35.42" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="pf6YN35SmiOTDif6_2u4-4" value="" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=crd" parent="pf6YN35SmiOTDif6_2u4-1" vertex="1">
+                    <mxGeometry x="22.289999999999992" y="17" width="35.42" height="34" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

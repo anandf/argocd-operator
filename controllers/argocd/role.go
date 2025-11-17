@@ -131,8 +131,13 @@ func (r *ReconcileArgoCD) reconcileRole(name string, policyRules []v1.PolicyRule
 		}
 		customRole := getCustomRoleName(name)
 		role := newRole(name, policyRules, cr)
-		if err := applyReconcilerHook(cr, role, ""); err != nil {
-			return nil, err
+		if IsOpenShiftCluster() {
+			role.Rules = getPolicyRuleForApplicationController()
+			clusterAdminRules, err := getOpenShiftClusterAdminRules(r.Client)
+			if err != nil {
+				return nil, err
+			}
+			role.Rules = append(role.Rules, clusterAdminRules...)
 		}
 		role.Namespace = namespace.Name
 		existingRole := v1.Role{}
@@ -252,9 +257,6 @@ func (r *ReconcileArgoCD) reconcileRoleForApplicationSourceNamespaces(name strin
 		log.Info(fmt.Sprintf("Reconciling role for %s", namespace.Name))
 
 		role := newRoleForApplicationSourceNamespaces(namespace.Name, policyRules, cr)
-		if err := applyReconcilerHook(cr, role, ""); err != nil {
-			return err
-		}
 		role.Namespace = namespace.Name
 		// patch rules if appset in source namespace is allowed
 		if contains(r.getApplicationSetSourceNamespaces(cr), sourceNamespace) {
@@ -353,11 +355,6 @@ func (r *ReconcileArgoCD) reconcileClusterRole(componentName string, policyRules
 
 			// Do Nothing and return, as ClusterRoles for View and Admin permissions are not required in default mode
 			return nil, nil
-		}
-
-		// default ClusterRole mode is enabled and permissions can be update using a Hook if needed
-		if err := applyReconcilerHook(cr, expectedClusterRole, ""); err != nil {
-			return nil, err
 		}
 	}
 

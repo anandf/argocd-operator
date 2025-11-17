@@ -21,14 +21,23 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"reflect"
 	goruntime "runtime"
 	"strings"
 
-	"github.com/argoproj/argo-cd/v3/util/env"
+	pipelinesv1alpha1 "github.com/anandf/pipelines-api/api/v1alpha1"
+	"github.com/argoproj-labs/argocd-operator/controllers/openshift"
+	"github.com/argoproj/argo-cd/v2/util/env"
+	appsv1 "github.com/openshift/api/apps/v1"
 	configv1 "github.com/openshift/api/config/v1"
+	console "github.com/openshift/api/console/v1"
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	templatev1 "github.com/openshift/api/template/v1"
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	"k8s.io/client-go/kubernetes"
+	crdv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -40,9 +49,9 @@ import (
 	"github.com/argoproj-labs/argocd-operator/controllers/argocdexport"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
 
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
 	notificationsConfig "github.com/argoproj-labs/argocd-operator/controllers/notificationsconfiguration"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -78,6 +87,7 @@ func init() {
 
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1beta1.AddToScheme(scheme))
+	utilruntime.Must(pipelinesv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -86,7 +96,9 @@ func printVersion() {
 	setupLog.Info(fmt.Sprintf("Go OS/Arch: %s/%s", goruntime.GOOS, goruntime.GOARCH))
 	setupLog.Info(fmt.Sprintf("Version of %s-operator: %v", common.ArgoCDAppName, version.Version))
 }
+func main_dummy() {
 
+}
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -228,6 +240,21 @@ func main() {
 	}
 	setupLog.Info("Registering Components.")
 
+	registerComponentOrExit(mgr, console.AddToScheme)
+	registerComponentOrExit(mgr, routev1.AddToScheme) // Adding the routev1 api
+	registerComponentOrExit(mgr, operatorsv1.AddToScheme)
+	registerComponentOrExit(mgr, operatorsv1alpha1.AddToScheme)
+	registerComponentOrExit(mgr, v1alpha1.AddToScheme)
+	registerComponentOrExit(mgr, v1beta1.AddToScheme)
+	registerComponentOrExit(mgr, configv1.AddToScheme)
+	registerComponentOrExit(mgr, monitoringv1.AddToScheme)
+	//TODO: Check for RolloutManager being a separate Deployment.
+	//registerComponentOrExit(mgr, rolloutManagerApi.AddToScheme)
+	registerComponentOrExit(mgr, templatev1.AddToScheme)
+	registerComponentOrExit(mgr, appsv1.AddToScheme)
+	registerComponentOrExit(mgr, oauthv1.AddToScheme)
+	registerComponentOrExit(mgr, crdv1.AddToScheme)
+
 	// Setup Scheme for all resources
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		setupLog.Error(err, "")
@@ -268,6 +295,51 @@ func main() {
 		setupLog.Error(err, "Failed to initialize Kubernetes client")
 		os.Exit(1)
 	}
+
+	if err = (&openshift.ReconcileGitopsService{
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		DisableDefaultInstall: strings.ToLower(os.Getenv(common.DisableDefaultInstallEnvVar)) == "true",
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "GitopsService")
+		os.Exit(1)
+	}
+
+	if err = (&openshift.ReconcileArgoCDRoute{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Argo CD route")
+		os.Exit(1)
+	}
+
+	if err = (&openshift.ArgoCDMetricsReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Argo CD metrics")
+		os.Exit(1)
+	}
+
+	// TODO: Check how RolloutsManager needs to be handled. Can it be a separate Deployment Object within the same OLM bundle
+	//isNamespaceScoped := strings.ToLower(os.Getenv(rolloutManagerProvisioner.NamespaceScopedArgoRolloutsController)) == "true"
+	//
+	//if isNamespaceScoped {
+	//	setupLog.Info("Argo Rollouts manager running in namespaced-scoped mode")
+	//} else {
+	//	setupLog.Info("Argo Rollouts manager running in cluster-scoped mode")
+	//}
+	//
+	//if err = (&rolloutManagerProvisioner.RolloutManagerReconciler{
+	//	Client:                                mgr.GetClient(),
+	//	Scheme:                                mgr.GetScheme(),
+	//	OpenShiftRoutePluginLocation:          getArgoRolloutsOpenshiftRouteTrafficManagerPath(),
+	//	NamespaceScopedArgoRolloutsController: isNamespaceScoped,
+	//}).SetupWithManager(mgr); err != nil {
+	//	setupLog.Error(err, "unable to create controller", "controller", "Argo Rollouts")
+	//	os.Exit(1)
+	//}
+
 	if err = (&argocd.ReconcileArgoCD{
 		Client:        client,
 		Scheme:        mgr.GetScheme(),
@@ -371,4 +443,13 @@ func initK8sClient() (*kubernetes.Clientset, error) {
 	}
 
 	return k8sClient, nil
+}
+
+func registerComponentOrExit(mgr manager.Manager, f func(*k8sruntime.Scheme) error) {
+	// Setup Scheme for all resources
+	if err := f(mgr.GetScheme()); err != nil {
+		setupLog.Error(err, "")
+		os.Exit(1)
+	}
+	setupLog.Info(fmt.Sprintf("Component registered: %v", reflect.ValueOf(f)))
 }

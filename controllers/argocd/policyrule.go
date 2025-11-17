@@ -12,8 +12,7 @@ import (
 )
 
 func policyRuleForApplicationController() []v1.PolicyRule {
-
-	return []v1.PolicyRule{
+	policyRules := []v1.PolicyRule{
 		{
 			APIGroups: []string{
 				"*",
@@ -37,6 +36,10 @@ func policyRuleForApplicationController() []v1.PolicyRule {
 			},
 		},
 	}
+	if IsOpenShiftCluster() {
+		policyRules = policyRulesForClusterConfig()
+	}
+	return policyRules
 }
 
 func policyRuleForApplicationControllerView() []v1.PolicyRule {

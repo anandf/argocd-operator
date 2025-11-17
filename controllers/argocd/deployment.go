@@ -222,7 +222,13 @@ func getArgoImportVolumes(cr *argoprojv1alpha1.ArgoCDExport) []corev1.Volume {
 
 func getArgoRedisArgs(useTLS bool) []string {
 	args := make([]string, 0)
-
+	if IsOpenShiftCluster() {
+		args = append(args,
+			"redis-server",
+			"--protected-mode",
+			"no",
+		)
+	}
 	args = append(args, "--save", "")
 	args = append(args, "--appendonly", "no")
 	args = append(args, "--requirepass $(REDIS_PASSWORD)")
@@ -480,10 +486,6 @@ func (r *ReconcileArgoCD) reconcileRedisDeployment(cr *argoproj.ArgoCD, useTLS b
 		},
 	}
 
-	if err := applyReconcilerHook(cr, deploy, ""); err != nil {
-		return err
-	}
-
 	existing := newDeploymentWithSuffix("redis", "redis", cr)
 	deplFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
 	if err != nil {
@@ -659,6 +661,7 @@ func (r *ReconcileArgoCD) reconcileRedisHAProxyDeployment(cr *argoproj.ArgoCD) e
 	}
 
 	deploy.Spec.Template.Spec.Containers = []corev1.Container{{
+		Command:         getCommandForRedisHAProxy(),
 		Image:           getRedisHAProxyContainerImage(cr),
 		ImagePullPolicy: argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy),
 		Name:            "haproxy",
@@ -790,14 +793,6 @@ func (r *ReconcileArgoCD) reconcileRedisHAProxyDeployment(cr *argoproj.ArgoCD) e
 	AddSeccompProfileForOpenShift(r.Client, &deploy.Spec.Template.Spec)
 
 	deploy.Spec.Template.Spec.ServiceAccountName = fmt.Sprintf("%s-%s", cr.Name, "argocd-redis-ha")
-
-	version, err := getClusterVersion(r.Client)
-	if err != nil {
-		log.Error(err, "error getting cluster version")
-	}
-	if err := applyReconcilerHook(cr, deploy, version); err != nil {
-		return err
-	}
 
 	existing := newDeploymentWithSuffix("redis-ha-haproxy", "redis", cr)
 	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
@@ -1135,9 +1130,6 @@ func (r *ReconcileArgoCD) reconcileServerDeployment(cr *argoproj.ArgoCD, useTLSF
 		for key, value := range cr.Spec.Server.Labels {
 			deploy.Spec.Template.Labels[key] = value
 		}
-	}
-	if err := applyReconcilerHook(cr, deploy, ""); err != nil {
-		return err
 	}
 
 	existing := newDeploymentWithSuffix("server", "server", cr)
