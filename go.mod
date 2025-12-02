@@ -3,6 +3,7 @@ module github.com/argoproj-labs/argocd-operator
 go 1.24.6
 
 require (
+	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/anandf/pipelines-api v0.0.0-20250505115812-78b90b5b745d
 	github.com/argoproj/argo-cd/v2 v2.14.21
 	github.com/argoproj/argo-cd/v3 v3.1.9
@@ -35,7 +36,15 @@ require (
 	sigs.k8s.io/yaml v1.6.0
 )
 
-require sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
+require (
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/huandu/xstrings v1.5.0 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
+)
 
 require (
 	github.com/argoproj-labs/argocd-image-updater v1.0.0

@@ -1,0 +1,165 @@
+{{- if .Extra.Enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-dex-server
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: {{ .Extra.Replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-dex-server
+      app.kubernetes.io/instance: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-dex-server
+        app.kubernetes.io/instance: {{ .Name }}
+        {{- range $key, $value := .Labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- if .Annotations }}
+      annotations:
+        {{- range $key, $value := .Annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .ServiceAccount }}
+      initContainers:
+        - name: copyutil
+          image: {{ .Extra.InitImage }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "Always" }}
+          command:
+            - cp
+            - -n
+            - /usr/local/bin/argocd
+            - /shared/argocd-dex
+          volumeMounts:
+            - name: static-files
+              mountPath: /shared
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+      containers:
+        - name: dex
+          image: {{ .Image }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "Always" }}
+          command:
+            - /shared/argocd-dex
+          args:
+            - rundex
+          {{- if .Extra.Env }}
+          env:
+            {{- range .Extra.Env }}
+            - name: {{ .Name }}
+              {{- if .Value }}
+              value: {{ .Value | quote }}
+              {{- else if .ValueFrom }}
+              valueFrom:
+                {{- toYaml .ValueFrom | nindent 16 }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 5556
+              protocol: TCP
+            - name: grpc
+              containerPort: 5557
+              protocol: TCP
+            - name: metrics
+              containerPort: 5558
+              protocol: TCP
+          {{- if .Extra.Resources }}
+          resources:
+            {{- if .Extra.Resources.Limits }}
+            limits:
+              {{- range $key, $value := .Extra.Resources.Limits }}
+              {{ $key }}: {{ $value }}
+              {{- end }}
+            {{- end }}
+            {{- if .Extra.Resources.Requests }}
+            requests:
+              {{- range $key, $value := .Extra.Resources.Requests }}
+              {{ $key }}: {{ $value }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          volumeMounts:
+            - name: static-files
+              mountPath: /shared
+            - name: dex-config
+              mountPath: /tmp
+            - name: tls-certs
+              mountPath: /tmp/tls/tls.crt
+              subPath: tls.crt
+            - name: tls-certs
+              mountPath: /tmp/tls/tls.key
+              subPath: tls.key
+            {{- if .Extra.VolumeMounts }}
+            {{- range .Extra.VolumeMounts }}
+            - name: {{ .Name }}
+              mountPath: {{ .MountPath }}
+              {{- if .SubPath }}
+              subPath: {{ .SubPath }}
+              {{- end }}
+              {{- if .ReadOnly }}
+              readOnly: {{ .ReadOnly }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+      {{- if .Extra.NodeSelector }}
+      nodeSelector:
+        {{- range $key, $value := .Extra.NodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Extra.Tolerations }}
+      tolerations:
+        {{- toYaml .Extra.Tolerations | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: static-files
+          emptyDir: {}
+        - name: dex-config
+          configMap:
+            name: argocd-dex-server
+        - name: tls-certs
+          secret:
+            secretName: argocd-dex-server-tls
+            optional: true
+        {{- if .Extra.Volumes }}
+        {{- range .Extra.Volumes }}
+        - name: {{ .Name }}
+          {{- if .ConfigMap }}
+          configMap:
+            name: {{ .ConfigMap.Name }}
+            {{- if .ConfigMap.Optional }}
+            optional: {{ .ConfigMap.Optional }}
+            {{- end }}
+          {{- else if .Secret }}
+          secret:
+            secretName: {{ .Secret.SecretName }}
+            {{- if .Secret.Optional }}
+            optional: {{ .Secret.Optional }}
+            {{- end }}
+          {{- else if .EmptyDir }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+{{- end }}

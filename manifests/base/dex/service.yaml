@@ -1,0 +1,29 @@
+{{- if .Extra.Enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Name }}-dex-server
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: argocd-dex-server
+    app.kubernetes.io/instance: {{ .Name }}
+  ports:
+    - name: http
+      port: 5556
+      protocol: TCP
+      targetPort: 5556
+    - name: grpc
+      port: 5557
+      protocol: TCP
+      targetPort: 5557
+    - name: metrics
+      port: 5558
+      protocol: TCP
+      targetPort: 5558
+{{- end }}

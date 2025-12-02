@@ -11,6 +11,7 @@ import (
 	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
 	"github.com/argoproj-labs/argocd-operator/common"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
+	"github.com/argoproj-labs/argocd-operator/pkg/platform"
 	"github.com/argoproj/argo-cd/v2/util/glob"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -46,7 +47,7 @@ func NewApplicationSetController(client client.Client, scheme *runtime.Scheme) *
 	}
 }
 
-func (r *ApplicationSetController) Reconcile(cr *argoproj.ArgoCD) error {
+func (r *ApplicationSetController) Reconcile(cr *argoproj.ArgoCD, apiDetector *platform.APIDetector) error {
 	r.logger.Info("reconciling applicationset serviceaccounts")
 	sa, err := r.reconcileApplicationSetServiceAccount(cr)
 	if err != nil {

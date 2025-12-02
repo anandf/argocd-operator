@@ -1,0 +1,167 @@
+{{- if .Extra.HAEnabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Name }}-{{ .Component }}-ha-server
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: {{ .Extra.HAReplicas | default 3 }}
+  serviceName: {{ .Name }}-{{ .Component }}-ha-headless
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-redis-ha
+      app.kubernetes.io/instance: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-redis-ha
+        app.kubernetes.io/instance: {{ .Name }}
+        {{- range $key, $value := .Labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- if .Annotations }}
+      annotations:
+        {{- range $key, $value := .Annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .ServiceAccount }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: argocd-redis-ha
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: config-init
+          image: {{ .Image }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - /readonly-config/init.sh
+          env:
+            - name: SENTINEL_ID_0
+              value: {{ .Extra.SentinelID0 | default "3c0d9c0320bb34888c2df5757c718ce6ca992ce6" }}
+            - name: SENTINEL_ID_1
+              value: {{ .Extra.SentinelID1 | default "40000915ab58c3fa8fd888fb8b24711944e6cbb4" }}
+            - name: SENTINEL_ID_2
+              value: {{ .Extra.SentinelID2 | default "2bbec7894d954a8af3bb54d13eaec53cb024e2ca" }}
+          volumeMounts:
+            - name: config
+              mountPath: /readonly-config
+              readOnly: true
+            - name: data
+              mountPath: /data
+      containers:
+        - name: redis
+          image: {{ .Image }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "Always" }}
+          command:
+            - redis-server
+          args:
+            - /data/conf/redis.conf
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/redis_liveness.sh
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          {{- if .Extra.Resources }}
+          resources:
+            {{- toYaml .Extra.Resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: health
+              mountPath: /health
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+        - name: sentinel
+          image: {{ .Image }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "Always" }}
+          command:
+            - redis-sentinel
+          args:
+            - /data/conf/sentinel.conf
+          ports:
+            - name: sentinel
+              containerPort: 26379
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 26379
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/sentinel_liveness.sh
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          {{- if .Extra.Resources }}
+          resources:
+            {{- toYaml .Extra.Resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: health
+              mountPath: /health
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+      {{- if .Extra.NodeSelector }}
+      nodeSelector:
+        {{- range $key, $value := .Extra.NodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Extra.Tolerations }}
+      tolerations:
+        {{- toYaml .Extra.Tolerations | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-redis-ha-configmap
+        - name: health
+          configMap:
+            name: {{ .Name }}-redis-ha-health-configmap
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Extra.StorageSize | default "8Gi" }}
+{{- end }}

@@ -1,0 +1,22 @@
+{{- if .Extra.Enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Name }}-{{ .Component }}-metrics
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: argocd-notifications-controller
+    app.kubernetes.io/instance: {{ .Name }}
+    app.kubernetes.io/component: {{ .Component }}
+  ports:
+    - name: metrics
+      port: 9001
+      protocol: TCP
+      targetPort: 9001
+{{- end }}

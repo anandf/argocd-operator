@@ -1,0 +1,94 @@
+{{- if not .Extra.HAEnabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-{{ .Component }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-redis
+      app.kubernetes.io/instance: {{ .Name }}
+      app.kubernetes.io/component: {{ .Component }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-redis
+        app.kubernetes.io/instance: {{ .Name }}
+        app.kubernetes.io/component: {{ .Component }}
+        {{- range $key, $value := .Labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- if .Annotations }}
+      annotations:
+        {{- range $key, $value := .Annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .ServiceAccount }}
+      containers:
+        - name: redis
+          image: {{ .Image }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "Always" }}
+          args:
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+            {{- if .Extra.RedisConf }}
+            - --include
+            - /redis-config/redis.conf
+            {{- end }}
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          {{- if .Extra.Resources }}
+          resources:
+            {{- if .Extra.Resources.Limits }}
+            limits:
+              {{- range $key, $value := .Extra.Resources.Limits }}
+              {{ $key }}: {{ $value }}
+              {{- end }}
+            {{- end }}
+            {{- if .Extra.Resources.Requests }}
+            requests:
+              {{- range $key, $value := .Extra.Resources.Requests }}
+              {{ $key }}: {{ $value }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- if .Extra.RedisConf }}
+          volumeMounts:
+            - name: redis-config
+              mountPath: /redis-config
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+      {{- if .Extra.NodeSelector }}
+      nodeSelector:
+        {{- range $key, $value := .Extra.NodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Extra.Tolerations }}
+      tolerations:
+        {{- toYaml .Extra.Tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Extra.RedisConf }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{ .Extra.RedisConf }}
+      {{- end }}
+{{- end }}

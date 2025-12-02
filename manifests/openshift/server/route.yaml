@@ -1,0 +1,37 @@
+{{- if .Extra.RouteEnabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Name }}-{{ .Component }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- if .Extra.RouteAnnotations }}
+  annotations:
+    {{- range $key, $value := .Extra.RouteAnnotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .Extra.RouteHost }}
+  host: {{ .Extra.RouteHost }}
+  {{- end }}
+  to:
+    kind: Service
+    name: {{ .Name }}-{{ .Component }}
+    weight: 100
+  port:
+    targetPort: https
+  tls:
+    termination: {{ .Extra.TLSTermination | default "passthrough" }}
+    {{- if eq (.Extra.TLSTermination | default "passthrough") "reencrypt" }}
+    destinationCACertificate: |
+      {{- .Extra.DestinationCACert | nindent 6 }}
+    {{- end }}
+    {{- if .Extra.TLSInsecureEdgeTerminationPolicy }}
+    insecureEdgeTerminationPolicy: {{ .Extra.TLSInsecureEdgeTerminationPolicy }}
+    {{- end }}
+  wildcardPolicy: None
+{{- end }}

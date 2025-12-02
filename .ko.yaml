@@ -1,0 +1,3 @@
+defaultBaseImage: gcr.io/distroless/static:nonroot
+baseImageOverrides:
+  github.com/anandf/argocd-operator/cmd: registry.access.redhat.com/ubi8/ubi-minimal

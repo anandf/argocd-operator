@@ -5,6 +5,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+const (
+	PlatformTypeKubernetes = "kubernetes"
+	PlatformTypeOpenShift  = "openshift"
+)
+
 // Platform defines a Kubernetes platform (Vanila Kubernetes, OpenShift...)
 type Platform interface {
 	PlatformParams() PlatformConfig
@@ -21,11 +26,11 @@ type PlatformConfig struct {
 }
 
 type Controller interface {
-	Reconcile(cr *argoproj.ArgoCD) error
+	Reconcile(cr *argoproj.ArgoCD, apiDetector *APIDetector) error
 }
 
 type Decorator interface {
-	Decorate(object *runtime.Object) error
+	Decorate(object runtime.Object) error
 }
 
 // ControllerName defines a name given to a controller(reconciler) in a platform

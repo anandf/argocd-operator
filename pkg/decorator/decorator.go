@@ -1,6 +1,8 @@
 package decorator
 
 import (
+	"fmt"
+
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/apps/v1"
 	v2 "k8s.io/api/batch/v1"
@@ -21,30 +23,42 @@ func NewSCCDecorator(client client.Client, scheme *runtime.Scheme) *SCCDecorator
 	return &SCCDecorator{
 		Client: client,
 		Scheme: scheme,
-		logger: logs.Log.WithName("ApplicationSetController"),
+		logger: logs.Log.WithName("SCCDecorator"),
 	}
 }
 
-func (s *SCCDecorator) Decorate(obj runtime.Object) {
-	var podspec corev1.PodSpec
-	switch obj.(type) {
+func (s *SCCDecorator) Decorate(obj runtime.Object) error {
+	var podspec *corev1.PodSpec
+	var objectName string
+
+	switch typed := obj.(type) {
 	case *corev1.Pod:
-		podspec = obj.(*corev1.Pod).Spec
+		podspec = &typed.Spec
+		objectName = fmt.Sprintf("Pod/%s", typed.Name)
 	case *v1.Deployment:
-		podspec = obj.(*v1.Deployment).Spec.Template.Spec
+		podspec = &typed.Spec.Template.Spec
+		objectName = fmt.Sprintf("Deployment/%s", typed.Name)
 	case *v1.DaemonSet:
-		podspec = obj.(*v1.DaemonSet).Spec.Template.Spec
+		podspec = &typed.Spec.Template.Spec
+		objectName = fmt.Sprintf("DaemonSet/%s", typed.Name)
 	case *v1.ReplicaSet:
-		podspec = obj.(*v1.ReplicaSet).Spec.Template.Spec
+		podspec = &typed.Spec.Template.Spec
+		objectName = fmt.Sprintf("ReplicaSet/%s", typed.Name)
 	case *v1.StatefulSet:
-		podspec = obj.(*v1.StatefulSet).Spec.Template.Spec
+		podspec = &typed.Spec.Template.Spec
+		objectName = fmt.Sprintf("StatefulSet/%s", typed.Name)
 	case *v2.Job:
-		podspec = obj.(*v2.Job).Spec.Template.Spec
+		podspec = &typed.Spec.Template.Spec
+		objectName = fmt.Sprintf("Job/%s", typed.Name)
 	case *v2.CronJob:
-		podspec = obj.(*v2.CronJob).Spec.JobTemplate.Spec.Template.Spec
+		podspec = &typed.Spec.JobTemplate.Spec.Template.Spec
+		objectName = fmt.Sprintf("CronJob/%s", typed.Name)
+	default:
+		return fmt.Errorf("unsupported object type for SCC decoration: %T", obj)
 	}
 
-	s.logger.Info("Decorating podspec for Security context constraints(SCC)", "podspec", podspec)
+	s.logger.Info("Decorating podspec for Security Context Constraints (SCC)", "object", objectName)
+
 	if podspec.SecurityContext == nil {
 		podspec.SecurityContext = &corev1.PodSecurityContext{}
 	}
@@ -54,4 +68,6 @@ func (s *SCCDecorator) Decorate(obj runtime.Object) {
 	if len(podspec.SecurityContext.SeccompProfile.Type) == 0 {
 		podspec.SecurityContext.SeccompProfile.Type = corev1.SeccompProfileTypeRuntimeDefault
 	}
+
+	return nil
 }
