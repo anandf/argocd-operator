@@ -77,9 +77,11 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: appset_argocdNS.Name,
 				},
 				Spec: v1beta1.ArgoCDSpec{
-					ApplicationSet: &v1beta1.ArgoCDApplicationSet{
-						SCMProviders: []string{
-							"github.com",
+					ArgoCDCommonSpec: v1beta1.ArgoCDCommonSpec{
+						ApplicationSet: &v1beta1.ArgoCDApplicationSet{
+							SCMProviders: []string{
+								"github.com",
+							},
 						},
 					},
 				},
@@ -607,8 +609,10 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: appset_argocdNS.Name,
 				},
 				Spec: v1beta1.ArgoCDSpec{
-					ApplicationSet: &v1beta1.ArgoCDApplicationSet{
-						SourceNamespaces: []string{targetNS.Name},
+					ArgoCDCommonSpec: v1beta1.ArgoCDCommonSpec{
+						ApplicationSet: &v1beta1.ArgoCDApplicationSet{
+							SourceNamespaces: []string{targetNS.Name},
+						},
 					},
 					SourceNamespaces: []string{targetNS.Name},
 				},

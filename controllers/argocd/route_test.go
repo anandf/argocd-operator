@@ -899,7 +899,7 @@ func TestReconilePrometheusRouteWithExternalTLSData(t *testing.T) {
 		{
 			name: "prometheus route without tls data",
 			argocd: *makeArgoCD(func(a *argoproj.ArgoCD) {
-				a.Spec.Prometheus = argoproj.ArgoCDPrometheusSpec{
+				a.Spec.ArgoCDCommonSpec.Prometheus = argoproj.ArgoCDPrometheusSpec{
 					Enabled: true,
 					Route: argoproj.ArgoCDRouteSpec{
 						Enabled: true,
@@ -912,8 +912,8 @@ func TestReconilePrometheusRouteWithExternalTLSData(t *testing.T) {
 		{
 			name: "prometheus route with embedded tls data (deprecated method)",
 			argocd: *makeArgoCD(func(a *argoproj.ArgoCD) {
-				a.Spec.Prometheus.Enabled = true
-				a.Spec.Prometheus.Route = argoproj.ArgoCDRouteSpec{
+				a.Spec.ArgoCDCommonSpec.Prometheus.Enabled = true
+				a.Spec.ArgoCDCommonSpec.Prometheus.Route = argoproj.ArgoCDRouteSpec{
 					Enabled: true,
 					TLS: &routev1.TLSConfig{
 						Termination: routev1.TLSTerminationPassthrough,
@@ -932,8 +932,8 @@ func TestReconilePrometheusRouteWithExternalTLSData(t *testing.T) {
 		{
 			name: "prometheus route with tls data in secret",
 			argocd: *makeArgoCD(func(a *argoproj.ArgoCD) {
-				a.Spec.Prometheus.Enabled = true
-				a.Spec.Prometheus.Route = argoproj.ArgoCDRouteSpec{
+				a.Spec.ArgoCDCommonSpec.Prometheus.Enabled = true
+				a.Spec.ArgoCDCommonSpec.Prometheus.Route = argoproj.ArgoCDRouteSpec{
 					Enabled: true,
 					TLS: &routev1.TLSConfig{
 						ExternalCertificate: &routev1.LocalObjectReference{
@@ -951,8 +951,8 @@ func TestReconilePrometheusRouteWithExternalTLSData(t *testing.T) {
 		{
 			name: "prometheus route with non-existing secret",
 			argocd: *makeArgoCD(func(a *argoproj.ArgoCD) {
-				a.Spec.Prometheus.Enabled = true
-				a.Spec.Prometheus.Route = argoproj.ArgoCDRouteSpec{
+				a.Spec.ArgoCDCommonSpec.Prometheus.Enabled = true
+				a.Spec.ArgoCDCommonSpec.Prometheus.Route = argoproj.ArgoCDRouteSpec{
 					Enabled: true,
 					TLS: &routev1.TLSConfig{
 						ExternalCertificate: &routev1.LocalObjectReference{

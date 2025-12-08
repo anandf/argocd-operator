@@ -431,8 +431,10 @@ func TestReconcileApplicationSet_Deployments_SpecOverride(t *testing.T) {
 			name:        "fields are set in argocd spec and not on appsetspec",
 			appSetField: &argoproj.ArgoCDApplicationSet{},
 			argocdField: argoproj.ArgoCDSpec{
-				Image:   "test",
-				Version: "sha256:b835999eb5cf75d01a2678cd971095926d9c2566c9ffe746d04b83a6a0a2849f",
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					Image:   "test",
+					Version: "sha256:b835999eb5cf75d01a2678cd971095926d9c2566c9ffe746d04b83a6a0a2849f",
+				},
 			},
 			expectedContainerImage: "test@sha256:b835999eb5cf75d01a2678cd971095926d9c2566c9ffe746d04b83a6a0a2849f",
 		},
@@ -443,8 +445,10 @@ func TestReconcileApplicationSet_Deployments_SpecOverride(t *testing.T) {
 				Version: "sha256:b835999eb5cf75d01a2678cd971095926d9c2566c9ffe746d04b83a6a0a2849f",
 			},
 			argocdField: argoproj.ArgoCDSpec{
-				Image:   "test",
-				Version: "sha256:b835999eb5cf75d01a2678cd9710952566c9ffe746d04b83a6a0a2849f926d9c",
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					Image:   "test",
+					Version: "sha256:b835999eb5cf75d01a2678cd9710952566c9ffe746d04b83a6a0a2849f926d9c",
+				},
 			},
 			expectedContainerImage: "custom-image@sha256:b835999eb5cf75d01a2678cd971095926d9c2566c9ffe746d04b83a6a0a2849f",
 		},
@@ -513,9 +517,9 @@ func TestReconcileApplicationSet_Deployments_SpecOverride(t *testing.T) {
 			err := r.Create(context.Background(), cm, &client.CreateOptions{})
 			assert.NoError(t, err)
 
-			if test.argocdField.Image != "" {
-				a.Spec.Image = test.argocdField.Image
-				a.Spec.Version = test.argocdField.Version
+			if test.argocdField.ArgoCDCommonSpec.Image != "" {
+				a.Spec.ArgoCDCommonSpec.Image = test.argocdField.ArgoCDCommonSpec.Image
+				a.Spec.ArgoCDCommonSpec.Version = test.argocdField.ArgoCDCommonSpec.Version
 			}
 
 			a.Spec.ApplicationSet = test.appSetField
@@ -552,8 +556,10 @@ func TestReconcileApplicationSet_Deployments_Command(t *testing.T) {
 		{
 			name: "Appset in any namespaces without scm provider list",
 			argocdSpec: argoproj.ArgoCDSpec{
-				ApplicationSet: &argoproj.ArgoCDApplicationSet{
-					SourceNamespaces: []string{"foo", "bar"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					ApplicationSet: &argoproj.ArgoCDApplicationSet{
+						SourceNamespaces: []string{"foo", "bar"},
+					},
 				},
 				SourceNamespaces: []string{"foo", "bar"},
 			},
@@ -562,9 +568,11 @@ func TestReconcileApplicationSet_Deployments_Command(t *testing.T) {
 		{
 			name: "with SCM provider list",
 			argocdSpec: argoproj.ArgoCDSpec{
-				ApplicationSet: &argoproj.ArgoCDApplicationSet{
-					SourceNamespaces: []string{"foo"},
-					SCMProviders:     []string{"github.com"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					ApplicationSet: &argoproj.ArgoCDApplicationSet{
+						SCMProviders:     []string{"github.com"},
+						SourceNamespaces: []string{"foo"},
+					},
 				},
 				SourceNamespaces: []string{"foo", "bar"},
 			},
@@ -573,9 +581,11 @@ func TestReconcileApplicationSet_Deployments_Command(t *testing.T) {
 		{
 			name: "Appsets namespaces without Apps namespaces",
 			argocdSpec: argoproj.ArgoCDSpec{
-				ApplicationSet: &argoproj.ArgoCDApplicationSet{
-					SourceNamespaces: []string{"foo"},
-					SCMProviders:     []string{"github.com"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					ApplicationSet: &argoproj.ArgoCDApplicationSet{
+						SCMProviders:     []string{"github.com"},
+						SourceNamespaces: []string{"foo"},
+					},
 				},
 				SourceNamespaces: []string{},
 			},
@@ -761,7 +771,9 @@ func TestReconcileApplicationSet_SourceNamespacesRBACCreation(t *testing.T) {
 		{
 			name: "No appset & app source namespaces", // no resources should be created
 			argoCDSpec: argoproj.ArgoCDSpec{
-				ApplicationSet:   nil,
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					ApplicationSet: nil,
+				},
 				SourceNamespaces: []string(nil),
 			},
 			expectErr: false,
@@ -769,8 +781,10 @@ func TestReconcileApplicationSet_SourceNamespacesRBACCreation(t *testing.T) {
 		{
 			name: "appset source ns not subset of app source ns", // resources shouldn't be created in allowed namespaces
 			argoCDSpec: argoproj.ArgoCDSpec{
-				ApplicationSet: &argoproj.ArgoCDApplicationSet{
-					SourceNamespaces: []string{"foo", "bar"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					ApplicationSet: &argoproj.ArgoCDApplicationSet{
+						SourceNamespaces: []string{"foo", "bar"},
+					},
 				},
 				SourceNamespaces: []string(nil),
 			},
@@ -781,8 +795,10 @@ func TestReconcileApplicationSet_SourceNamespacesRBACCreation(t *testing.T) {
 		{
 			name: "appset source ns subset of app source ns ", // resources should be created is all appset ns
 			argoCDSpec: argoproj.ArgoCDSpec{
-				ApplicationSet: &argoproj.ArgoCDApplicationSet{
-					SourceNamespaces: []string{"foo", "bar"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					ApplicationSet: &argoproj.ArgoCDApplicationSet{
+						SourceNamespaces: []string{"foo", "bar"},
+					},
 				},
 				SourceNamespaces: []string{"foo", "bar"},
 			},
@@ -793,8 +809,10 @@ func TestReconcileApplicationSet_SourceNamespacesRBACCreation(t *testing.T) {
 		{
 			name: "appset source ns partial subset of app source ns ", // resources should be created only in ns part of app source ns
 			argoCDSpec: argoproj.ArgoCDSpec{
-				ApplicationSet: &argoproj.ArgoCDApplicationSet{
-					SourceNamespaces: []string{"foo", "bar"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					ApplicationSet: &argoproj.ArgoCDApplicationSet{
+						SourceNamespaces: []string{"foo", "bar"},
+					},
 				},
 				SourceNamespaces: []string{"foo"},
 			},
@@ -1343,8 +1361,10 @@ func TestArgoCDApplicationSet_removeUnmanagedApplicationSetSourceNamespaceResour
 
 	a.Spec = argoproj.ArgoCDSpec{
 		SourceNamespaces: []string{ns1, ns2},
-		ApplicationSet: &argoproj.ArgoCDApplicationSet{
-			SourceNamespaces: []string{ns1, ns2},
+		ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+			ApplicationSet: &argoproj.ArgoCDApplicationSet{
+				SourceNamespaces: []string{ns1, ns2},
+			},
 		},
 	}
 
@@ -1367,8 +1387,10 @@ func TestArgoCDApplicationSet_removeUnmanagedApplicationSetSourceNamespaceResour
 	// remove appset ns
 	a.Spec = argoproj.ArgoCDSpec{
 		SourceNamespaces: []string{ns2},
-		ApplicationSet: &argoproj.ArgoCDApplicationSet{
-			SourceNamespaces: []string{ns1, ns2},
+		ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+			ApplicationSet: &argoproj.ArgoCDApplicationSet{
+				SourceNamespaces: []string{ns1, ns2},
+			},
 		},
 	}
 
@@ -1506,15 +1528,15 @@ func TestGetApplicationSetContainerImage(t *testing.T) {
 	assert.Equal(t, "testingimage@sha:123456", out)
 
 	// when env var is set and also spec image and version fields are set, spec fields should be returned
-	cr.Spec.Image = "customimage"
-	cr.Spec.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a"
+	cr.Spec.ArgoCDCommonSpec.Image = "customimage"
+	cr.Spec.ArgoCDCommonSpec.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a"
 	os.Setenv(common.ArgoCDImageEnvName, "quay.io/project/registry@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "customimage@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a", out)
 
 	// when spec.image and spec.applicationset.image is passed and also env is passed, container level image should take priority
-	cr.Spec.Image = "customimage"
-	cr.Spec.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a"
+	cr.Spec.ArgoCDCommonSpec.Image = "customimage"
+	cr.Spec.ArgoCDCommonSpec.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a"
 	cr.Spec.ApplicationSet.Image = "containerImage"
 	cr.Spec.ApplicationSet.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2b"
 	os.Setenv(common.ArgoCDImageEnvName, "quay.io/project/registry@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2c")
@@ -1522,8 +1544,8 @@ func TestGetApplicationSetContainerImage(t *testing.T) {
 	assert.Equal(t, "containerImage@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2b", out)
 
 	// when env var is set and also spec version field is set but image field is not set, should return env var image with spec version
-	cr.Spec.Image = ""
-	cr.Spec.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a"
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a"
 	cr.Spec.ApplicationSet.Image = ""
 	cr.Spec.ApplicationSet.Version = ""
 	os.Setenv(common.ArgoCDImageEnvName, "quay.io/project/registry@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2b")
@@ -1531,66 +1553,66 @@ func TestGetApplicationSetContainerImage(t *testing.T) {
 	assert.Equal(t, "quay.io/project/registry@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a", out)
 
 	// when env var in wrong format is set and also spec version field is set but image field is not set
-	cr.Spec.Image = ""
-	cr.Spec.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a"
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = "sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a"
 	os.Setenv(common.ArgoCDImageEnvName, "quay.io/project/registry:latest")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "quay.io/project/registry@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a", out)
 
-	cr.Spec.Image = ""
-	cr.Spec.Version = ""
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = ""
 	os.Setenv(common.ArgoCDImageEnvName, "quay.io/project/registry:latest@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "quay.io/project/registry:latest@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a", out)
 
-	cr.Spec.Image = ""
-	cr.Spec.Version = ""
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = ""
 	os.Setenv(common.ArgoCDImageEnvName, "docker.io/library/ubuntu")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "docker.io/library/ubuntu", out)
 
-	cr.Spec.Image = ""
-	cr.Spec.Version = "v0.0.1"
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = "v0.0.1"
 	os.Setenv(common.ArgoCDImageEnvName, "quay.io/project/registry:latest@sha256:7e0aa2f42232f6b2f0a9d5f98b2e3a9a6b8c9b7f3a4c1d2e5f6a7b8c9d0e1f2a")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "quay.io/project/registry:v0.0.1", out)
 
-	cr.Spec.Image = ""
-	cr.Spec.Version = "v0.0.1"
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = "v0.0.1"
 	os.Setenv(common.ArgoCDImageEnvName, "docker.io/library/ubuntu")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "docker.io/library/ubuntu:v0.0.1", out)
 
-	cr.Spec.Image = ""
-	cr.Spec.Version = "v0.0.1"
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = "v0.0.1"
 	os.Setenv(common.ArgoCDImageEnvName, "ubuntu")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "ubuntu:v0.0.1", out)
 
 	// when env var is not set and spec image and version fields are not set, default image should be returned
 	os.Setenv(common.ArgoCDImageEnvName, "")
-	cr.Spec.Image = ""
-	cr.Spec.Version = ""
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = ""
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "quay.io/argoproj/argocd@"+common.ArgoCDDefaultArgoVersion, out)
 
 	// when env var is not set and spec image and version fields are set, spec fields should be returned
-	cr.Spec.Image = "customimage"
-	cr.Spec.Version = "sha256:1234567890abcdef"
+	cr.Spec.ArgoCDCommonSpec.Image = "customimage"
+	cr.Spec.ArgoCDCommonSpec.Version = "sha256:1234567890abcdef"
 	os.Setenv(common.ArgoCDImageEnvName, "")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "customimage@sha256:1234567890abcdef", out)
 
 	// when env var is not set and spec version field is set but image field is not set, should return default image with spec version tag
-	cr.Spec.Image = ""
-	cr.Spec.Version = "customversion"
+	cr.Spec.ArgoCDCommonSpec.Image = ""
+	cr.Spec.ArgoCDCommonSpec.Version = "customversion"
 	os.Setenv(common.ArgoCDImageEnvName, "")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "quay.io/argoproj/argocd:customversion", out)
 
 	// when env var is not set and spec image field is set but version field is not set, should return spec image with default tag
-	cr.Spec.Image = "customimage"
-	cr.Spec.Version = ""
+	cr.Spec.ArgoCDCommonSpec.Image = "customimage"
+	cr.Spec.ArgoCDCommonSpec.Version = ""
 	os.Setenv(common.ArgoCDImageEnvName, "")
 	out = getApplicationSetContainerImage(&cr)
 	assert.Equal(t, "customimage@"+common.ArgoCDDefaultArgoVersion, out)

@@ -69,28 +69,30 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Route: argov1beta1api.ArgoCDRouteSpec{
-							Enabled: true,
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Route: argov1beta1api.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						SidecarContainers: []corev1.Container{{
-							Name:    "cmp",
-							Command: []string{"/var/run/argocd/argocd-cmp-server"}, // Entrypoint should be Argo CD lightweight CMP server ie. argocd-cmp-server
-							Image:   "quay.io/fedora/fedora:latest",                // This can be off-the-shelf or custom-built image
-							SecurityContext: &corev1.SecurityContext{
-								RunAsNonRoot: ptr.To(true),
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{MountPath: "/var/run/argocd", Name: "var-files"},
-								{MountPath: "/home/argocd/cmp-server/plugins", Name: "plugins"},
-								{MountPath: "/tmp", Name: "tmp"},
-								// Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
-								{MountPath: "/home/argocd/cmp-server/config/plugin.yaml", Name: "cmp-plugin", SubPath: "plugin.yaml"},
-							},
-						}},
-						Volumes: []corev1.Volume{{Name: "cmp-plugin", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: "cmp-plugin"}}}}},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							SidecarContainers: []corev1.Container{{
+								Name:    "cmp",
+								Command: []string{"/var/run/argocd/argocd-cmp-server"}, // Entrypoint should be Argo CD lightweight CMP server ie. argocd-cmp-server
+								Image:   "quay.io/fedora/fedora:latest",                // This can be off-the-shelf or custom-built image
+								SecurityContext: &corev1.SecurityContext{
+									RunAsNonRoot: ptr.To(true),
+								},
+								VolumeMounts: []corev1.VolumeMount{
+									{MountPath: "/var/run/argocd", Name: "var-files"},
+									{MountPath: "/home/argocd/cmp-server/plugins", Name: "plugins"},
+									{MountPath: "/tmp", Name: "tmp"},
+									// Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
+									{MountPath: "/home/argocd/cmp-server/config/plugin.yaml", Name: "cmp-plugin", SubPath: "plugin.yaml"},
+								},
+							}},
+							Volumes: []corev1.Volume{{Name: "cmp-plugin", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: "cmp-plugin"}}}}},
+						},
 					},
 				},
 			}

@@ -64,13 +64,15 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 					Namespace: ns.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Route: argov1beta1api.ArgoCDRouteSpec{
-							Enabled: true,
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Route: argov1beta1api.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
-					},
-					Notifications: argov1beta1api.ArgoCDNotifications{
-						Enabled: false,
+						Notifications: &argov1beta1api.ArgoCDNotifications{
+							Enabled: false,
+						},
 					},
 				},
 			}
@@ -84,7 +86,7 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 
 			By("enabling notification controller")
 			argocdFixture.Update(argocd, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec.Notifications = argov1beta1api.ArgoCDNotifications{
+				ac.Spec.ArgoCDCommonSpec.Notifications = &argov1beta1api.ArgoCDNotifications{
 					Enabled: true,
 				}
 			})
@@ -155,7 +157,7 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 
 			By("disabling notification controller in ArgoCD CR")
 			argocdFixture.Update(argocd, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec.Notifications = argov1beta1api.ArgoCDNotifications{
+				ac.Spec.ArgoCDCommonSpec.Notifications = &argov1beta1api.ArgoCDNotifications{
 					Enabled: false,
 				}
 			})
@@ -189,9 +191,11 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 					Namespace: ns.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Notifications: argov1beta1api.ArgoCDNotifications{
-						Enabled:          true,
-						SourceNamespaces: []string{fooNs.Name},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Notifications: &argov1beta1api.ArgoCDNotifications{
+							Enabled:          true,
+							SourceNamespaces: []string{fooNs.Name},
+						},
 					},
 					SourceNamespaces: []string{fooNs.Name},
 				},

@@ -135,16 +135,18 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "example-argocd", Namespace: ns.Name,
 					Labels: map[string]string{"example": "ingress"}},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Server: argov1beta1api.ArgoCDServerSpec{
-						GRPC: argov1beta1api.ArgoCDServerGRPCSpec{
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Server: argov1beta1api.ArgoCDServerSpec{
+							GRPC: argov1beta1api.ArgoCDServerGRPCSpec{
+								Ingress: argov1beta1api.ArgoCDIngressSpec{
+									Enabled: true,
+								},
+							},
 							Ingress: argov1beta1api.ArgoCDIngressSpec{
 								Enabled: true,
 							},
+							Insecure: true,
 						},
-						Ingress: argov1beta1api.ArgoCDIngressSpec{
-							Enabled: true,
-						},
-						Insecure: true,
 					},
 				},
 			}
@@ -207,7 +209,9 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "example-argocd", Namespace: ns.Name,
 					Labels: map[string]string{"example": "disable-admin"}},
 				Spec: argov1beta1api.ArgoCDSpec{
-					DisableAdmin: true,
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						DisableAdmin: true,
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argoCD)).To(Succeed())
@@ -275,10 +279,12 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD = &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "example-argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						WebhookServer: argov1beta1api.WebhookServerSpec{
-							Ingress: argov1beta1api.ArgoCDIngressSpec{
-								Enabled: true,
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							WebhookServer: argov1beta1api.WebhookServerSpec{
+								Ingress: argov1beta1api.ArgoCDIngressSpec{
+									Enabled: true,
+								},
 							},
 						},
 					},

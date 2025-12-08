@@ -77,7 +77,7 @@ func (src *ArgoCD) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.OIDCConfig = src.Spec.OIDCConfig
 	dst.Spec.Monitoring = v1beta1.ArgoCDMonitoringSpec(src.Spec.Monitoring)
 	dst.Spec.NodePlacement = (*v1beta1.ArgoCDNodePlacementSpec)(src.Spec.NodePlacement)
-	dst.Spec.Notifications = v1beta1.ArgoCDNotifications(src.Spec.Notifications)
+	dst.Spec.Notifications = ConvertAlphaToBetaNotifications(src.Spec.Notifications)
 	dst.Spec.Prometheus = *ConvertAlphaToBetaPrometheus(&src.Spec.Prometheus)
 	dst.Spec.RBAC = v1beta1.ArgoCDRBACSpec(src.Spec.RBAC)
 	dst.Spec.Redis = *ConvertAlphaToBetaRedis(&src.Spec.Redis)
@@ -152,7 +152,7 @@ func (dst *ArgoCD) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.Spec.OIDCConfig = src.Spec.OIDCConfig
 	dst.Spec.Monitoring = ArgoCDMonitoringSpec(src.Spec.Monitoring)
 	dst.Spec.NodePlacement = (*ArgoCDNodePlacementSpec)(src.Spec.NodePlacement)
-	dst.Spec.Notifications = ArgoCDNotifications(src.Spec.Notifications)
+	dst.Spec.Notifications = ConvertBetaToAlphaNotifications(src.Spec.Notifications)
 	dst.Spec.Prometheus = *ConvertBetaToAlphaPrometheus(&src.Spec.Prometheus)
 	dst.Spec.RBAC = ArgoCDRBACSpec(src.Spec.RBAC)
 	dst.Spec.Redis = *ConvertBetaToAlphaRedis(&src.Spec.Redis)
@@ -268,6 +268,20 @@ func ConvertAlphaToBetaApplicationSet(src *ArgoCDApplicationSet) *v1beta1.ArgoCD
 		}
 	}
 	return dst
+}
+
+func ConvertAlphaToBetaNotifications(src ArgoCDNotifications) *v1beta1.ArgoCDNotifications {
+	return &v1beta1.ArgoCDNotifications{
+		Replicas:         src.Replicas,
+		Enabled:          src.Enabled,
+		Env:              src.Env,
+		Image:            src.Image,
+		Version:          src.Version,
+		Resources:        src.Resources,
+		LogLevel:         src.LogLevel,
+		LogFormat:        src.LogFormat,
+		SourceNamespaces: src.SourceNamespaces,
+	}
 }
 
 func ConvertAlphaToBetaGrafana(src *ArgoCDGrafanaSpec) *v1beta1.ArgoCDGrafanaSpec {
@@ -493,6 +507,23 @@ func ConvertBetaToAlphaApplicationSet(src *v1beta1.ArgoCDApplicationSet) *ArgoCD
 		}
 	}
 	return dst
+}
+
+func ConvertBetaToAlphaNotifications(src *v1beta1.ArgoCDNotifications) ArgoCDNotifications {
+	if src == nil {
+		return ArgoCDNotifications{}
+	}
+	return ArgoCDNotifications{
+		Replicas:         src.Replicas,
+		Enabled:          src.Enabled,
+		SourceNamespaces: src.SourceNamespaces,
+		Env:              src.Env,
+		Image:            src.Image,
+		Version:          src.Version,
+		Resources:        src.Resources,
+		LogLevel:         src.LogLevel,
+		LogFormat:        src.LogFormat,
+	}
 }
 
 func ConvertBetaToAlphaGrafana(src *v1beta1.ArgoCDGrafanaSpec) *ArgoCDGrafanaSpec {

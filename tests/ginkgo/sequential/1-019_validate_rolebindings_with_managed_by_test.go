@@ -61,10 +61,12 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 			argoCD_central := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "example-argocd", Namespace: centralArgoCD_NS.Name, Labels: map[string]string{"example": "basic"}},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SSO: &argov1beta1api.ArgoCDSSOSpec{
-						Provider: argov1beta1api.SSOProviderTypeDex,
-						Dex: &argov1beta1api.ArgoCDDexSpec{
-							Config: "test-config",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						SSO: &argov1beta1api.ArgoCDSSOSpec{
+							Provider: argov1beta1api.SSOProviderTypeDex,
+							Dex: &argov1beta1api.ArgoCDDexSpec{
+								Config: "test-config",
+							},
 						},
 					},
 				},
@@ -112,10 +114,12 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 			argoCD1 := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "child-argocd", Namespace: argocd1_NS.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SSO: &argov1beta1api.ArgoCDSSOSpec{
-						Provider: argov1beta1api.SSOProviderTypeDex,
-						Dex: &argov1beta1api.ArgoCDDexSpec{
-							Config: "test-config",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						SSO: &argov1beta1api.ArgoCDSSOSpec{
+							Provider: argov1beta1api.SSOProviderTypeDex,
+							Dex: &argov1beta1api.ArgoCDDexSpec{
+								Config: "test-config",
+							},
 						},
 					},
 				},

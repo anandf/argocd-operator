@@ -75,9 +75,11 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 					Namespace: ns.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Route: argov1beta1api.ArgoCDRouteSpec{
-							Enabled: true,
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Route: argov1beta1api.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
 					},
 				},

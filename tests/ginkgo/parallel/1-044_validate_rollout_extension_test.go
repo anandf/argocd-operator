@@ -61,8 +61,10 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Server: argov1beta1api.ArgoCDServerSpec{
-						EnableRolloutsUI: true,
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Server: argov1beta1api.ArgoCDServerSpec{
+							EnableRolloutsUI: true,
+						},
 					},
 				},
 			}
@@ -139,7 +141,7 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 
 			By("disabling Rollouts UI")
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec.Server.EnableRolloutsUI = false
+				ac.Spec.ArgoCDCommonSpec.Server.EnableRolloutsUI = false
 			})
 
 			Eventually(argoCDServer, "2m", "5s").Should(k8sFixture.ExistByName())

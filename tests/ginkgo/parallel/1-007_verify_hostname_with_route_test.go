@@ -59,10 +59,12 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd-long-name-for-route-testiiiiiiiiiiiiiiiiiiiiiiiing", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						WebhookServer: argov1beta1api.WebhookServerSpec{
-							Route: argov1beta1api.ArgoCDRouteSpec{
-								Enabled: true,
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							WebhookServer: argov1beta1api.WebhookServerSpec{
+								Route: argov1beta1api.ArgoCDRouteSpec{
+									Enabled: true,
+								},
 							},
 						},
 					},

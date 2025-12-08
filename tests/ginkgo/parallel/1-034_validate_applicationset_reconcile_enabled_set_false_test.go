@@ -152,20 +152,22 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 					Namespace: test1NS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Enabled: ptr.To(false),
-					},
-					Redis: argov1beta1api.ArgoCDRedisSpec{
-						Enabled: ptr.To(false),
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Enabled: ptr.To(false),
-					},
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Enabled: ptr.To(false),
-					},
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						Enabled: ptr.To(false),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Enabled: ptr.To(false),
+						},
+						Redis: argov1beta1api.ArgoCDRedisSpec{
+							Enabled: ptr.To(false),
+						},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Enabled: ptr.To(false),
+						},
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Enabled: ptr.To(false),
+						},
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							Enabled: ptr.To(false),
+						},
 					},
 				},
 			}
@@ -199,20 +201,22 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argocdFixture.Update(argocd_test1, func(ac *argov1beta1api.ArgoCD) {
 
 				ac.Spec = argov1beta1api.ArgoCDSpec{
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Enabled: ptr.To(true),
-					},
-					Redis: argov1beta1api.ArgoCDRedisSpec{
-						Enabled: ptr.To(false),
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Enabled: ptr.To(false),
-					},
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Enabled: ptr.To(false),
-					},
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						Enabled: ptr.To(false),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Enabled: ptr.To(true),
+						},
+						Redis: argov1beta1api.ArgoCDRedisSpec{
+							Enabled: ptr.To(false),
+						},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Enabled: ptr.To(false),
+						},
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Enabled: ptr.To(false),
+						},
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							Enabled: ptr.To(false),
+						},
 					},
 				}
 
@@ -247,20 +251,22 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argocdFixture.Update(argocd_test1, func(ac *argov1beta1api.ArgoCD) {
 
 				ac.Spec = argov1beta1api.ArgoCDSpec{
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Enabled: ptr.To(true),
-					},
-					Redis: argov1beta1api.ArgoCDRedisSpec{
-						Enabled: ptr.To(true),
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Enabled: ptr.To(false),
-					},
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Enabled: ptr.To(false),
-					},
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						Enabled: ptr.To(false),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Enabled: ptr.To(true),
+						},
+						Redis: argov1beta1api.ArgoCDRedisSpec{
+							Enabled: ptr.To(true),
+						},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Enabled: ptr.To(false),
+						},
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Enabled: ptr.To(false),
+						},
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							Enabled: ptr.To(false),
+						},
 					},
 				}
 
@@ -295,20 +301,22 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argocdFixture.Update(argocd_test1, func(ac *argov1beta1api.ArgoCD) {
 
 				ac.Spec = argov1beta1api.ArgoCDSpec{
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Enabled: ptr.To(true),
-					},
-					Redis: argov1beta1api.ArgoCDRedisSpec{
-						Enabled: ptr.To(true),
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Enabled: ptr.To(true),
-					},
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Enabled: ptr.To(false),
-					},
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						Enabled: ptr.To(false),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Enabled: ptr.To(true),
+						},
+						Redis: argov1beta1api.ArgoCDRedisSpec{
+							Enabled: ptr.To(true),
+						},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Enabled: ptr.To(true),
+						},
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Enabled: ptr.To(false),
+						},
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							Enabled: ptr.To(false),
+						},
 					},
 				}
 
@@ -341,20 +349,22 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argocdFixture.Update(argocd_test1, func(ac *argov1beta1api.ArgoCD) {
 
 				ac.Spec = argov1beta1api.ArgoCDSpec{
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Enabled: ptr.To(true),
-					},
-					Redis: argov1beta1api.ArgoCDRedisSpec{
-						Enabled: ptr.To(true),
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Enabled: ptr.To(true),
-					},
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Enabled: ptr.To(true),
-					},
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						Enabled: ptr.To(false),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Enabled: ptr.To(true),
+						},
+						Redis: argov1beta1api.ArgoCDRedisSpec{
+							Enabled: ptr.To(true),
+						},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Enabled: ptr.To(true),
+						},
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Enabled: ptr.To(true),
+						},
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							Enabled: ptr.To(false),
+						},
 					},
 				}
 
@@ -387,20 +397,22 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argocdFixture.Update(argocd_test1, func(ac *argov1beta1api.ArgoCD) {
 
 				ac.Spec = argov1beta1api.ArgoCDSpec{
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Enabled: ptr.To(true),
-					},
-					Redis: argov1beta1api.ArgoCDRedisSpec{
-						Enabled: ptr.To(true),
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Enabled: ptr.To(true),
-					},
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Enabled: ptr.To(true),
-					},
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						Enabled: ptr.To(true),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Enabled: ptr.To(true),
+						},
+						Redis: argov1beta1api.ArgoCDRedisSpec{
+							Enabled: ptr.To(true),
+						},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Enabled: ptr.To(true),
+						},
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Enabled: ptr.To(true),
+						},
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							Enabled: ptr.To(true),
+						},
 					},
 				}
 

@@ -200,11 +200,13 @@ func TestReconcileArgoCD_reconcileRoleForApplicationSourceNamespaces(t *testing.
 	a := makeTestArgoCD()
 	allowClusterConfigNamespaces(t, a.Namespace)
 	a.Spec = argoproj.ArgoCDSpec{
+		ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+			ApplicationSet: &argoproj.ArgoCDApplicationSet{
+				SourceNamespaces: []string{"tmp"},
+			},
+		},
 		SourceNamespaces: []string{
 			sourceNamespace,
-		},
-		ApplicationSet: &argoproj.ArgoCDApplicationSet{
-			SourceNamespaces: []string{"tmp"},
 		},
 	}
 
@@ -232,11 +234,13 @@ func TestReconcileArgoCD_reconcileRoleForApplicationSourceNamespaces(t *testing.
 
 	// check if appset rules are added for server-role when new appset namespace is added
 	a.Spec = argoproj.ArgoCDSpec{
+		ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+			ApplicationSet: &argoproj.ArgoCDApplicationSet{
+				SourceNamespaces: []string{"tmp", sourceNamespace},
+			},
+		},
 		SourceNamespaces: []string{
 			sourceNamespace,
-		},
-		ApplicationSet: &argoproj.ArgoCDApplicationSet{
-			SourceNamespaces: []string{"tmp", sourceNamespace},
 		},
 	}
 	err = r.reconcileRoleForApplicationSourceNamespaces(workloadIdentifier, expectedRules, a)
@@ -250,8 +254,10 @@ func TestReconcileArgoCD_reconcileRoleForApplicationSourceNamespaces(t *testing.
 		SourceNamespaces: []string{
 			sourceNamespace,
 		},
-		ApplicationSet: &argoproj.ArgoCDApplicationSet{
-			SourceNamespaces: []string{"tmp"},
+		ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+			ApplicationSet: &argoproj.ArgoCDApplicationSet{
+				SourceNamespaces: []string{"tmp"},
+			},
 		},
 	}
 	err = r.reconcileRoleForApplicationSourceNamespaces(workloadIdentifier, expectedRules, a)

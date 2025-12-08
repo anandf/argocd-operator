@@ -106,11 +106,13 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
 
 				ac.Spec = argov1beta1api.ArgoCDSpec{
-					Redis: argov1beta1api.ArgoCDRedisSpec{
-						Remote: ptr.To("https://redis.remote.host:6379"),
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Remote: ptr.To("https://repo-server.remote.host:8081"),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Redis: argov1beta1api.ArgoCDRedisSpec{
+							Remote: ptr.To("https://redis.remote.host:6379"),
+						},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Remote: ptr.To("https://repo-server.remote.host:8081"),
+						},
 					},
 				}
 			})
@@ -148,7 +150,9 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 
 			By("disabling remote repo server and redis")
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec = argov1beta1api.ArgoCDSpec{}
+				ac.Spec = argov1beta1api.ArgoCDSpec{
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{},
+				}
 			})
 
 			ensureDefaultWorkloadsExist()

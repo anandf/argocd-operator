@@ -56,7 +56,9 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SSO: &argov1beta1api.ArgoCDSSOSpec{},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						SSO: &argov1beta1api.ArgoCDSSOSpec{},
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argoCD)).To(Succeed())
@@ -78,7 +80,7 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			By("setting a valid dex configuration in SSO field, which should fix the condition error")
 
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec.SSO = &argov1beta1api.ArgoCDSSOSpec{
+				ac.Spec.ArgoCDCommonSpec.SSO = &argov1beta1api.ArgoCDSSOSpec{
 					Dex: &argov1beta1api.ArgoCDDexSpec{
 						Resources: &corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
@@ -111,7 +113,7 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 
 			By("modifying provider to Keycloak, which is invalid")
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec.SSO.Provider = argov1beta1api.SSOProviderTypeKeycloak
+				ac.Spec.ArgoCDCommonSpec.SSO.Provider = argov1beta1api.SSOProviderTypeKeycloak
 			})
 
 			By("verifying .status.condition goes to invalid with expected error message")
@@ -129,7 +131,7 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 
 			By("modifying provider to Keycloak, which is invalid")
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec.SSO.Provider = argov1beta1api.SSOProviderTypeDex
+				ac.Spec.ArgoCDCommonSpec.SSO.Provider = argov1beta1api.SSOProviderTypeDex
 			})
 
 			By("verifying the phase and SSO status are now correct, and the error condition has been removed")

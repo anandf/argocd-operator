@@ -64,10 +64,11 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 					Namespace: ns.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SSO: &argov1beta1api.ArgoCDSSOSpec{
-						Provider: argov1beta1api.SSOProviderTypeDex,
-						Dex: &argov1beta1api.ArgoCDDexSpec{
-							Config: `
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						SSO: &argov1beta1api.ArgoCDSSOSpec{
+							Provider: argov1beta1api.SSOProviderTypeDex,
+							Dex: &argov1beta1api.ArgoCDDexSpec{
+								Config: `
 connectors:
 - type: mock
   id: mock
@@ -85,12 +86,12 @@ connectors:
     - email: admin@example.com
       name: Admin User
       groups: ["admin-group"]`,
+							},
 						},
-					},
-					RBAC: argov1beta1api.ArgoCDRBACSpec{
-						DefaultPolicy:     ptr.To("role:readonly"),
-						PolicyMatcherMode: ptr.To("glob"),
-						Policy: ptr.To(`
+						RBAC: argov1beta1api.ArgoCDRBACSpec{
+							DefaultPolicy:     ptr.To("role:readonly"),
+							PolicyMatcherMode: ptr.To("glob"),
+							Policy: ptr.To(`
 # Legacy policies using encoded sub claims (simulating Argo CD 2.x)
 g, ChdleGFtcGxlQGFyZ29wcm9qLmlvEgJkZXhfY29ubl9pZA, role:test-role
 p, ChdleGFtcGxlQGFyZ29wcm9qLmlvEgJkZXhfY29ubl9pZA, applications, get, */*, allow
@@ -103,6 +104,7 @@ p, QWRtaW5AZXhhbXBsZS5jb20gZGV4X2Nvbm5faWQ, *, *, */*, allow
 # Group-based policies (these should work in both versions)
 g, test-group, role:test-role
 g, admin-group, role:admin`),
+						},
 					},
 				},
 			}

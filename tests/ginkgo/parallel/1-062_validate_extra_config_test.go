@@ -57,7 +57,9 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "example-argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					ExtraConfig: map[string]string{"admin.enabled": "true"},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						ExtraConfig: map[string]string{"admin.enabled": "true"},
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argoCD)).To(Succeed())

@@ -104,8 +104,8 @@ var imageTests = []struct {
 		name:      "argo spec configuration",
 		imageFunc: getArgoContainerImage,
 		want:      argoTestImage, opts: []argoCDOpt{func(a *argoproj.ArgoCD) {
-			a.Spec.Image = "testing/argocd"
-			a.Spec.Version = "latest"
+			a.Spec.ArgoCDCommonSpec.Image = "testing/argocd"
+			a.Spec.ArgoCDCommonSpec.Version = "latest"
 		}},
 	},
 	{
@@ -125,16 +125,16 @@ var imageTests = []struct {
 		name:      "repo spec configuration",
 		imageFunc: getRepoServerContainerImage,
 		want:      argoTestImage, opts: []argoCDOpt{func(a *argoproj.ArgoCD) {
-			a.Spec.Repo.Image = "testing/argocd"
-			a.Spec.Repo.Version = "latest"
+			a.Spec.ArgoCDCommonSpec.Repo.Image = "testing/argocd"
+			a.Spec.ArgoCDCommonSpec.Repo.Version = "latest"
 		}},
 	},
 	{
 		name:      "repo configuration fallback spec",
 		imageFunc: getRepoServerContainerImage,
 		want:      argoTestImageOtherVersion, opts: []argoCDOpt{func(a *argoproj.ArgoCD) {
-			a.Spec.Image = "testing/argocd"
-			a.Spec.Version = "test"
+			a.Spec.ArgoCDCommonSpec.Image = "testing/argocd"
+			a.Spec.ArgoCDCommonSpec.Version = "test"
 		}},
 	},
 	{
@@ -155,8 +155,8 @@ var imageTests = []struct {
 		imageFunc: getRedisContainerImage,
 		want:      redisTestImage,
 		opts: []argoCDOpt{func(a *argoproj.ArgoCD) {
-			a.Spec.Redis.Image = "testing/redis"
-			a.Spec.Redis.Version = "latest"
+			a.Spec.ArgoCDCommonSpec.Redis.Image = "testing/redis"
+			a.Spec.ArgoCDCommonSpec.Redis.Version = "latest"
 		}},
 	},
 	{
@@ -179,8 +179,8 @@ var imageTests = []struct {
 		imageFunc: getRedisHAContainerImage,
 		want:      redisHATestImage,
 		opts: []argoCDOpt{func(a *argoproj.ArgoCD) {
-			a.Spec.Redis.Image = "testing/redis"
-			a.Spec.Redis.Version = "latest-ha"
+			a.Spec.ArgoCDCommonSpec.Redis.Image = "testing/redis"
+			a.Spec.ArgoCDCommonSpec.Redis.Version = "latest-ha"
 		}},
 	},
 	{

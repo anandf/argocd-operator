@@ -123,20 +123,22 @@ func makeTestArgoCDWithResources(opts ...argoCDOpt) *argoproj.ArgoCD {
 			Namespace: testNamespace,
 		},
 		Spec: argoproj.ArgoCDSpec{
-			ApplicationSet: &argoproj.ArgoCDApplicationSet{
-				Resources: makeTestApplicationSetResources(),
-			},
-			HA: argoproj.ArgoCDHASpec{
-				Resources: makeTestHAResources(),
-			},
-			SSO: &argoproj.ArgoCDSSOSpec{
-				Provider: "dex",
-				Dex: &argoproj.ArgoCDDexSpec{
-					Resources: makeTestDexResources(),
+			ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+				HA: argoproj.ArgoCDHASpec{
+					Resources: makeTestHAResources(),
 				},
-			},
-			Controller: argoproj.ArgoCDApplicationControllerSpec{
-				Resources: makeTestControllerResources(),
+				SSO: &argoproj.ArgoCDSSOSpec{
+					Provider: "dex",
+					Dex: &argoproj.ArgoCDDexSpec{
+						Resources: makeTestDexResources(),
+					},
+				},
+				Controller: argoproj.ArgoCDApplicationControllerSpec{
+					Resources: makeTestControllerResources(),
+				},
+				ApplicationSet: &argoproj.ArgoCDApplicationSet{
+					Resources: makeTestApplicationSetResources(),
+				},
 			},
 		},
 	}

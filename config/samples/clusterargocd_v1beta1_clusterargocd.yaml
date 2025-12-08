@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1beta1
+kind: ClusterArgoCD
+metadata:
+  name: example-clusterargocd
+spec:
+  # ControlPlaneNamespace specifies where ArgoCD control plane components
+  # (Deployments, StatefulSets, ConfigMaps, Services, etc.) will be deployed
+  controlPlaneNamespace: argocd-system
+
+  # SourceNamespaces defines namespaces where Applications can be created
+  sourceNamespaces:
+    - app-team-1
+    - app-team-2
+    - app-team-3
+
+  # Common ArgoCD configuration (inherited from ArgoCDCommonSpec)
+  server:
+    replicas: 2
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+  repo:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+  redis:
+    resources:
+      limits:
+        cpu: 250m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 64Mi
+
+  controller:
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi

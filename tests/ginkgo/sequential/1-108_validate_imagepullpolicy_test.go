@@ -73,7 +73,9 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 			policyAlways := corev1.PullAlways
 			argoCD := &argoproj.ArgoCD{
 				Spec: argoproj.ArgoCDSpec{
-					ImagePullPolicy: policyAlways,
+					ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+						ImagePullPolicy: policyAlways,
+					},
 				},
 			}
 			Expect(argoCD.Spec.ImagePullPolicy).ToNot(BeNil())
@@ -105,16 +107,18 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 			argoCD := &argoproj.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argoproj.ArgoCDSpec{
-					ImagePullPolicy: policy,
-					ApplicationSet: &argoproj.ArgoCDApplicationSet{
-						Enabled: &enabled,
-					},
-					Notifications: argoproj.ArgoCDNotifications{
-						Enabled: true,
-					},
-					Server: argoproj.ArgoCDServerSpec{
-						Route: argoproj.ArgoCDRouteSpec{
+					ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+						ImagePullPolicy: policy,
+						ApplicationSet: &argoproj.ArgoCDApplicationSet{
+							Enabled: &enabled,
+						},
+						Notifications: &argoproj.ArgoCDNotifications{
 							Enabled: true,
+						},
+						Server: argoproj.ArgoCDServerSpec{
+							Route: argoproj.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
 					},
 				},
@@ -243,9 +247,11 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 			argoCD := &argoproj.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argoproj.ArgoCDSpec{
-					Server: argoproj.ArgoCDServerSpec{
-						Route: argoproj.ArgoCDRouteSpec{
-							Enabled: true,
+					ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+						Server: argoproj.ArgoCDServerSpec{
+							Route: argoproj.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
 					},
 				},
@@ -356,9 +362,11 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 			argoCD1 := &argoproj.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns1.Name},
 				Spec: argoproj.ArgoCDSpec{
-					Server: argoproj.ArgoCDServerSpec{
-						Route: argoproj.ArgoCDRouteSpec{
-							Enabled: true,
+					ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+						Server: argoproj.ArgoCDServerSpec{
+							Route: argoproj.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
 					},
 				},
@@ -373,10 +381,12 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 			argoCD2 := &argoproj.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns2.Name},
 				Spec: argoproj.ArgoCDSpec{
-					ImagePullPolicy: policyNever,
-					Server: argoproj.ArgoCDServerSpec{
-						Route: argoproj.ArgoCDRouteSpec{
-							Enabled: true,
+					ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+						ImagePullPolicy: policyNever,
+						Server: argoproj.ArgoCDServerSpec{
+							Route: argoproj.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
 					},
 				},

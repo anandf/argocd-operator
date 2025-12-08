@@ -65,8 +65,10 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: argoCD_NS.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					ExtraConfig: map[string]string{
-						"application.sync.impersonation.enabled": "true",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						ExtraConfig: map[string]string{
+							"application.sync.impersonation.enabled": "true",
+						},
 					},
 				},
 			}

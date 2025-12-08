@@ -8353,14 +8353,14 @@ spec:
             properties:
               aggregatedClusterRoles:
                 description: AggregatedClusterRoles will allow users to have aggregated
-                  ClusterRoles for a cluster scoped instance.
+                  ClusterRoles.
                 type: boolean
               applicationInstanceLabelKey:
                 description: ApplicationInstanceLabelKey is the key name where Argo
                   CD injects the app name as a tracking label.
                 type: string
               applicationSet:
-                description: ArgoCDApplicationSet defines whether the Argo CD ApplicationSet
+                description: ApplicationSet defines whether the Argo CD ApplicationSet
                   controller should be installed.
                 properties:
                   annotations:
@@ -8595,8 +8595,12 @@ spec:
                       will be mounted on the ApplicationSet Controller (optional).
                     type: string
                   sourceNamespaces:
-                    description: SourceNamespaces defines the namespaces applicationset
-                      resources are allowed to be created in
+                    description: |-
+                      SourceNamespaces is deprecated. For ClusterArgoCD instances, use ClusterArgoCD.spec.sourceNamespaces instead.
+                      Deprecated: This field is deprecated and will be removed in a future release.
+                      For cluster-scoped instances, use ClusterArgoCD.spec.sourceNamespaces which controls source namespaces
+                      for all ArgoCD resources (Applications, ApplicationSets, and NotificationConfigurations).
+                      For namespace-scoped ArgoCD instances, cross-namespace management is not supported.
                     items:
                       type: string
                     type: array
@@ -10462,8 +10466,8 @@ spec:
                       type: object
                     type: array
                   webhookServer:
-                    description: WebhookServerSpec defines the options for the ApplicationSet
-                      Webhook Server component.
+                    description: WebhookServer defines the webhook server configuration
+                      for ApplicationSet
                     properties:
                       host:
                         description: Host is the hostname to use for Ingress/Route
@@ -10632,8 +10636,11 @@ spec:
                     type: object
                 type: object
               argoCDAgent:
-                description: ArgoCDAgent defines configurations for the ArgoCD Agent
-                  component.
+                description: |-
+                  ArgoCDAgent defines configurations for the ArgoCD Agent component.
+                  Deprecated: This field is deprecated for namespace-scoped ArgoCD instances and will be removed in a future release.
+                  Use ClusterArgoCD for cluster-scoped instances that support ArgoCD Agent.
+                  For migration guidance, see docs/migration/argocd-to-clusterargocd.md
                 properties:
                   agent:
                     description: Agent defines configurations for the Agent component
@@ -11133,10 +11140,7 @@ spec:
                 type: object
               configManagementPlugins:
                 description: 'Deprecated: ConfigManagementPlugins field is no longer
-                  supported. Argo CD now requires plugins to be defined as sidecar
-                  containers of repo server component. See ''.spec.repo.sidecarContainers''.
-                  ConfigManagementPlugins was previously used to specify additional
-                  config management plugins.'
+                  supported.'
                 type: string
               controller:
                 description: Controller defines the Application Controller options
@@ -16159,7 +16163,7 @@ spec:
                 type: object
               defaultClusterScopedRoleDisabled:
                 description: DefaultClusterScopedRoleDisabled will disable creation
-                  of default ClusterRoles for a cluster scoped instance.
+                  of default ClusterRoles.
                 type: boolean
               disableAdmin:
                 description: DisableAdmin will disable the admin user.
@@ -16167,13 +16171,8 @@ spec:
               extraConfig:
                 additionalProperties:
                   type: string
-                description: |-
-                  ExtraConfig can be used to add fields to Argo CD configmap that are not supported by Argo CD CRD.
-
-                  Note: ExtraConfig takes precedence over Argo CD CRD.
-                  For example, A user sets `argocd.Spec.DisableAdmin` = true and also
-                  `a.Spec.ExtraConfig["admin.enabled"]` = true. In this case, operator updates
-                  Argo CD Configmap as follows -> argocd-cm.Data["admin.enabled"] = true.
+                description: ExtraConfig can be used to add fields to Argo CD configmap
+                  that are not supported by Argo CD CRD.
                 type: object
               gaAnonymizeUsers:
                 description: GAAnonymizeUsers toggles user IDs being hashed before
@@ -16509,8 +16508,7 @@ spec:
                   to "Chat now!"
                 type: string
               helpChatURL:
-                description: HelpChatURL is the URL for getting chat help, this will
-                  typically be your Slack channel for support.
+                description: HelpChatURL is the URL for getting chat help.
                 type: string
               image:
                 description: Image is the ArgoCD container image for all ArgoCD components.
@@ -16735,8 +16733,7 @@ spec:
                 type: string
               initialSSHKnownHosts:
                 description: InitialSSHKnownHosts defines the SSH known hosts data
-                  upon creation of the cluster for connecting Git repositories via
-                  SSH.
+                  upon creation of the cluster.
                 properties:
                   excludedefaulthosts:
                     description: |-
@@ -16776,7 +16773,7 @@ spec:
                 type: array
               localUsers:
                 description: LocalUsers is a listing of local users to be created
-                  by the operator for the purpose of issuing ArgoCD API keys.
+                  by the operator.
                 items:
                   description: LocalUserSpec is used to specify information about
                     an ArgoCD local user to be created by the operator.
@@ -17108,9 +17105,12 @@ spec:
                         type: object
                     type: object
                   sourceNamespaces:
-                    description: SourceNamespaces is a list of namespaces from which
-                      the notifications controller will watch for ArgoCD Notification
-                      resources.
+                    description: |-
+                      SourceNamespaces is deprecated. For ClusterArgoCD instances, use ClusterArgoCD.spec.sourceNamespaces instead.
+                      Deprecated: This field is deprecated and will be removed in a future release.
+                      For cluster-scoped instances, use ClusterArgoCD.spec.sourceNamespaces which controls source namespaces
+                      for all ArgoCD resources (Applications, ApplicationSets, and NotificationConfigurations).
+                      For namespace-scoped ArgoCD instances, cross-namespace management is not supported.
                     items:
                       type: string
                     type: array
@@ -22413,8 +22413,7 @@ spec:
                     type: array
                 type: object
               repositoryCredentials:
-                description: 'Deprecated: RepositoryCredentials are the Git pull credentials
-                  to configure Argo CD with upon creation of the cluster.'
+                description: 'Deprecated: RepositoryCredentials are the Git pull credentials.'
                 type: string
               resourceActions:
                 description: ResourceActions customizes resource action behavior.
@@ -22493,9 +22492,8 @@ spec:
                     type: array
                 type: object
               resourceInclusions:
-                description: |-
-                  ResourceInclusions is used to only include specific group/kinds in the
-                  reconciliation process.
+                description: ResourceInclusions is used to only include specific group/kinds
+                  in the reconciliation process.
                 type: string
               resourceTrackingMethod:
                 description: ResourceTrackingMethod defines how Argo CD should track
@@ -27763,8 +27761,11 @@ spec:
                     type: array
                 type: object
               sourceNamespaces:
-                description: SourceNamespaces defines the namespaces application resources
-                  are allowed to be created in
+                description: |-
+                  SourceNamespaces defines the namespaces application resources are allowed to be created in
+                  Deprecated: This field is deprecated for namespace-scoped ArgoCD instances and will be removed in a future release.
+                  Use ClusterArgoCD for cluster-scoped instances that support cross-namespace application management.
+                  For migration guidance, see docs/migration/argocd-to-clusterargocd.md
                 items:
                   type: string
                 type: array
@@ -29957,9 +29958,7 @@ spec:
                     type: object
                 type: object
               usersAnonymousEnabled:
-                description: |-
-                  UsersAnonymousEnabled toggles anonymous user access.
-                  The anonymous users get default role permissions specified argocd-rbac-cm.
+                description: UsersAnonymousEnabled toggles anonymous user access.
                 type: boolean
               version:
                 description: Version is the tag to use with the ArgoCD container image

@@ -232,11 +232,12 @@ func TestReconcileNotifications_Deployments_Command(t *testing.T) {
 	}{
 		{
 			name: "Notifications contained in spec.sourceNamespaces",
-
 			argocdSpec: argoproj.ArgoCDSpec{
-				Notifications: argoproj.ArgoCDNotifications{
-					Enabled:          true,
-					SourceNamespaces: []string{"foo", "bar"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					Notifications: &argoproj.ArgoCDNotifications{
+						Enabled:          true,
+						SourceNamespaces: []string{"foo", "bar"},
+					},
 				},
 				SourceNamespaces: []string{"foo", "bar"},
 			},
@@ -245,9 +246,11 @@ func TestReconcileNotifications_Deployments_Command(t *testing.T) {
 		{
 			name: "Only notifications contained in spec.sourceNamespaces",
 			argocdSpec: argoproj.ArgoCDSpec{
-				Notifications: argoproj.ArgoCDNotifications{
-					Enabled:          true,
-					SourceNamespaces: []string{"foo"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					Notifications: &argoproj.ArgoCDNotifications{
+						Enabled:          true,
+						SourceNamespaces: []string{"foo"},
+					},
 				},
 				SourceNamespaces: []string{"foo", "bar"},
 			},
@@ -256,9 +259,11 @@ func TestReconcileNotifications_Deployments_Command(t *testing.T) {
 		{
 			name: "Empty spec.sourceNamespaces, no application namespaces arg",
 			argocdSpec: argoproj.ArgoCDSpec{
-				Notifications: argoproj.ArgoCDNotifications{
-					Enabled:          true,
-					SourceNamespaces: []string{"foo"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					Notifications: &argoproj.ArgoCDNotifications{
+						Enabled:          true,
+						SourceNamespaces: []string{},
+					},
 				},
 				SourceNamespaces: []string{},
 			},
@@ -269,9 +274,11 @@ func TestReconcileNotifications_Deployments_Command(t *testing.T) {
 			name:                  "Namespace scoped Argo CD, no application namespaces arg",
 			namespaceScopedArgoCD: true,
 			argocdSpec: argoproj.ArgoCDSpec{
-				Notifications: argoproj.ArgoCDNotifications{
-					Enabled:          true,
-					SourceNamespaces: []string{"foo"},
+				ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+					Notifications: &argoproj.ArgoCDNotifications{
+						Enabled:          true,
+						SourceNamespaces: []string{"foo"},
+					},
 				},
 				SourceNamespaces: []string{"foo"},
 			},
@@ -766,24 +773,24 @@ func TestArgoCDNotifications_getNotificationsSourceNamespaces(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		notificationsField argoproj.ArgoCDNotifications
+		notificationsField *argoproj.ArgoCDNotifications
 		expected           []string
 	}{
 		{
 			name:               "No Notifications configured",
-			notificationsField: argoproj.ArgoCDNotifications{},
+			notificationsField: nil,
 			expected:           []string(nil),
 		},
 		{
 			name: "Notifications enabled No notifications source namespaces",
-			notificationsField: argoproj.ArgoCDNotifications{
+			notificationsField: &argoproj.ArgoCDNotifications{
 				Enabled: true,
 			},
 			expected: []string(nil),
 		},
 		{
 			name: "Notifications enabled and notifications source namespaces",
-			notificationsField: argoproj.ArgoCDNotifications{
+			notificationsField: &argoproj.ArgoCDNotifications{
 				Enabled:          true,
 				SourceNamespaces: []string{"foo", "bar"},
 			},
@@ -791,7 +798,7 @@ func TestArgoCDNotifications_getNotificationsSourceNamespaces(t *testing.T) {
 		},
 		{
 			name: "Notifications disabled and notifications source namespaces",
-			notificationsField: argoproj.ArgoCDNotifications{
+			notificationsField: &argoproj.ArgoCDNotifications{
 				Enabled:          false,
 				SourceNamespaces: []string{"foo", "bar"},
 			},
@@ -858,11 +865,13 @@ func TestNotifications_removeUnmanagedNotificationsSourceNamespaceResources(t *t
 	allowClusterConfigNamespaces(t, a.Namespace)
 
 	a.Spec = argoproj.ArgoCDSpec{
-		SourceNamespaces: []string{ns1, ns2},
-		Notifications: argoproj.ArgoCDNotifications{
-			Enabled:          true,
-			SourceNamespaces: []string{ns1, ns2},
+		ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+			Notifications: &argoproj.ArgoCDNotifications{
+				Enabled:          true,
+				SourceNamespaces: []string{ns1, ns2},
+			},
 		},
+		SourceNamespaces: []string{ns1, ns2},
 	}
 
 	resObjs := []client.Object{a}
@@ -885,11 +894,13 @@ func TestNotifications_removeUnmanagedNotificationsSourceNamespaceResources(t *t
 
 	// remove notifications ns
 	a.Spec = argoproj.ArgoCDSpec{
-		SourceNamespaces: []string{ns2},
-		Notifications: argoproj.ArgoCDNotifications{
-			Enabled:          true,
-			SourceNamespaces: []string{ns1, ns2},
+		ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+			Notifications: &argoproj.ArgoCDNotifications{
+				Enabled:          true,
+				SourceNamespaces: []string{ns2},
+			},
 		},
+		SourceNamespaces: []string{ns2},
 	}
 
 	// clean up unmanaged namespaces resources

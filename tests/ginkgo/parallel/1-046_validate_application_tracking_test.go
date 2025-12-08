@@ -84,8 +84,10 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 					Namespace: test_1_046_argocd_1_NS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					InstallationID:         "instance-1",
-					ResourceTrackingMethod: "annotation+label",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						InstallationID:         "instance-1",
+						ResourceTrackingMethod: "annotation+label",
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd_1)).Should(Succeed())
@@ -97,8 +99,10 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 					Namespace: test_1_046_argocd_2_NS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					InstallationID:         "instance-2",
-					ResourceTrackingMethod: "annotation+label",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						InstallationID:         "instance-2",
+						ResourceTrackingMethod: "annotation+label",
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd_2)).Should(Succeed())
@@ -109,7 +113,9 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 					Namespace: test_1_046_argocd_3_NS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					InstallationID: "instance-3",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						InstallationID: "instance-3",
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd_3)).Should(Succeed())

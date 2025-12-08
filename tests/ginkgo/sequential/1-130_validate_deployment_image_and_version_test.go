@@ -141,7 +141,11 @@ var _ = Describe("Validate deployment image and version", func() {
 			enabled := true
 			argo := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: argocdInstanceName, Namespace: argocdNamespace},
-				Spec:       argov1beta1api.ArgoCDSpec{ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{Enabled: &enabled}},
+				Spec: argov1beta1api.ArgoCDSpec{
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{Enabled: &enabled},
+					},
+				},
 			}
 			Expect(c.Create(ctx, argo)).To(Succeed())
 			Eventually(func() error {

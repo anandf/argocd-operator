@@ -77,6 +77,9 @@ rules:
   - argocds
   - argocds/finalizers
   - argocds/status
+  - clusterargocds
+  - clusterargocds/finalizers
+  - clusterargocds/status
   - namespacemanagements
   - namespacemanagements/finalizers
   - namespacemanagements/status

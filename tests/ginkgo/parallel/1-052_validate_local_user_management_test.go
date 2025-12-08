@@ -60,10 +60,12 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "example-argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					LocalUsers: []argov1beta1api.LocalUserSpec{
-						{
-							Name:          "alice",
-							TokenLifetime: "100h",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						LocalUsers: []argov1beta1api.LocalUserSpec{
+							{
+								Name:          "alice",
+								TokenLifetime: "100h",
+							},
 						},
 					},
 				},

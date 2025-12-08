@@ -82,14 +82,16 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					ImageUpdater: argov1beta1api.ArgoCDImageUpdaterSpec{
-						Env: []corev1.EnvVar{
-							{
-								Name:  "IMAGE_UPDATER_LOGLEVEL",
-								Value: "trace",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						ImageUpdater: argov1beta1api.ArgoCDImageUpdaterSpec{
+							Env: []corev1.EnvVar{
+								{
+									Name:  "IMAGE_UPDATER_LOGLEVEL",
+									Value: "trace",
+								},
 							},
-						},
-						Enabled: true},
+							Enabled: true},
+					},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argoCD)).To(Succeed())

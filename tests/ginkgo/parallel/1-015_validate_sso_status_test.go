@@ -194,19 +194,21 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			By("updating ArgoCD CR to Dex with a valid client secret")
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
 				ac.Spec = argov1beta1api.ArgoCDSpec{
-					SSO: &argov1beta1api.ArgoCDSSOSpec{
-						Provider: argov1beta1api.SSOProviderTypeDex,
-						Dex: &argov1beta1api.ArgoCDDexSpec{
-							Config: "test-config",
-							Env: []corev1.EnvVar{
-								{
-									Name: "ARGO_WORKFLOWS_SSO_CLIENT_SECRET",
-									ValueFrom: &corev1.EnvVarSource{
-										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "argo-workflows-sso",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						SSO: &argov1beta1api.ArgoCDSSOSpec{
+							Provider: argov1beta1api.SSOProviderTypeDex,
+							Dex: &argov1beta1api.ArgoCDDexSpec{
+								Config: "test-config",
+								Env: []corev1.EnvVar{
+									{
+										Name: "ARGO_WORKFLOWS_SSO_CLIENT_SECRET",
+										ValueFrom: &corev1.EnvVarSource{
+											SecretKeyRef: &corev1.SecretKeySelector{
+												LocalObjectReference: corev1.LocalObjectReference{
+													Name: "argo-workflows-sso",
+												},
+												Key: "client-secret",
 											},
-											Key: "client-secret",
 										},
 									},
 								},

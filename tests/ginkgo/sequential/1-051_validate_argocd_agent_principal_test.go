@@ -91,8 +91,10 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: ns.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Enabled: ptr.To(false),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Enabled: ptr.To(false),
+						},
 					},
 					ArgoCDAgent: &argov1beta1api.ArgoCDAgentSpec{
 						Principal: &argov1beta1api.PrincipalSpec{

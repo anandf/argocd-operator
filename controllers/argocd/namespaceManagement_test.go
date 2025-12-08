@@ -21,7 +21,7 @@ import (
 func TestReconcileNamespaceManagement_FeatureEnabled(t *testing.T) {
 	logf.SetLogger(ZapLogger(true))
 	a := makeTestArgoCD(func(a *argoproj.ArgoCD) {
-		a.Spec.NamespaceManagement = []argoproj.ManagedNamespaces{{
+		a.Spec.ArgoCDCommonSpec.NamespaceManagement = []argoproj.ManagedNamespaces{{
 			Name:           "managed-ns",
 			AllowManagedBy: true,
 		}}
@@ -150,7 +150,7 @@ func TestHandleFeatureDisable_NamespaceCRsExistButNoMatch(t *testing.T) {
 
 func TestHandleFeatureDisable_NamespaceMatchesPattern_RBACDeleted(t *testing.T) {
 	a := makeTestArgoCD()
-	a.Spec.NamespaceManagement = []argoproj.ManagedNamespaces{
+	a.Spec.ArgoCDCommonSpec.NamespaceManagement = []argoproj.ManagedNamespaces{
 		{
 			Name:           "ns-*",
 			AllowManagedBy: true,
@@ -187,7 +187,7 @@ func TestHandleFeatureDisable_NamespaceMatchesPattern_RBACDeleted(t *testing.T) 
 
 func TestHandleFeatureDisable_SkipManagedByLabel(t *testing.T) {
 	a := makeTestArgoCD()
-	a.Spec.NamespaceManagement = []argoproj.ManagedNamespaces{
+	a.Spec.ArgoCDCommonSpec.NamespaceManagement = []argoproj.ManagedNamespaces{
 		{
 			Name:           "ns-*",
 			AllowManagedBy: true,
@@ -224,7 +224,7 @@ func TestHandleFeatureDisable_SkipManagedByLabel(t *testing.T) {
 
 func TestHandleFeatureDisable_NoPatternMatch(t *testing.T) {
 	a := makeTestArgoCD()
-	a.Spec.NamespaceManagement = []argoproj.ManagedNamespaces{
+	a.Spec.ArgoCDCommonSpec.NamespaceManagement = []argoproj.ManagedNamespaces{
 		{
 			Name:           "prod-*",
 			AllowManagedBy: true,
@@ -261,8 +261,10 @@ func TestMatchesNamespaceManagementRules(t *testing.T) {
 			name: "matches allowed pattern",
 			argocd: &argoproj.ArgoCD{
 				Spec: argoproj.ArgoCDSpec{
-					NamespaceManagement: []argoproj.ManagedNamespaces{
-						{Name: "allowed-*", AllowManagedBy: true},
+					ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+						NamespaceManagement: []argoproj.ManagedNamespaces{
+							{Name: "allowed-*", AllowManagedBy: true},
+						},
 					},
 				},
 			},
@@ -273,8 +275,10 @@ func TestMatchesNamespaceManagementRules(t *testing.T) {
 			name: "does not match pattern",
 			argocd: &argoproj.ArgoCD{
 				Spec: argoproj.ArgoCDSpec{
-					NamespaceManagement: []argoproj.ManagedNamespaces{
-						{Name: "allowed-*", AllowManagedBy: true},
+					ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+						NamespaceManagement: []argoproj.ManagedNamespaces{
+							{Name: "allowed-*", AllowManagedBy: true},
+						},
 					},
 				},
 			},
@@ -285,7 +289,9 @@ func TestMatchesNamespaceManagementRules(t *testing.T) {
 			name: "no namespace management configured",
 			argocd: &argoproj.ArgoCD{
 				Spec: argoproj.ArgoCDSpec{
-					NamespaceManagement: nil,
+					ArgoCDCommonSpec: argoproj.ArgoCDCommonSpec{
+						NamespaceManagement: nil,
+					},
 				},
 			},
 			namespace:   "random-ns",
@@ -296,7 +302,7 @@ func TestMatchesNamespaceManagementRules(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var allowedPatterns []string
-			for _, nm := range tt.argocd.Spec.NamespaceManagement {
+			for _, nm := range tt.argocd.Spec.ArgoCDCommonSpec.NamespaceManagement {
 				if nm.AllowManagedBy {
 					allowedPatterns = append(allowedPatterns, nm.Name)
 				}
@@ -311,7 +317,7 @@ func TestReconcileNamespaceManagement_FeatureEnabled_NoCRs(t *testing.T) {
 	// Feature enabled but no NamespaceManagement CRs exist
 	logf.SetLogger(ZapLogger(true))
 	a := makeTestArgoCD(func(a *argoproj.ArgoCD) {
-		a.Spec.NamespaceManagement = []argoproj.ManagedNamespaces{
+		a.Spec.ArgoCDCommonSpec.NamespaceManagement = []argoproj.ManagedNamespaces{
 			{Name: "managed-ns", AllowManagedBy: true},
 		}
 	})
@@ -345,7 +351,7 @@ func TestReconcileNamespaceManagement_DifferentManagedBy(t *testing.T) {
 	logf.SetLogger(ZapLogger(true))
 	a := makeTestArgoCD(func(a *argoproj.ArgoCD) {
 		a.Namespace = "argocd"
-		a.Spec.NamespaceManagement = []argoproj.ManagedNamespaces{
+		a.Spec.ArgoCDCommonSpec.NamespaceManagement = []argoproj.ManagedNamespaces{
 			{Name: "managed-ns", AllowManagedBy: true},
 		}
 	})
@@ -385,7 +391,7 @@ func TestReconcileNamespaceManagement_ExplicitlyDisallowed(t *testing.T) {
 	// Explicitly disallowed namespace (AllowManagedBy=false)
 	a := makeTestArgoCD(func(a *argoproj.ArgoCD) {
 		a.Namespace = "argocd"
-		a.Spec.NamespaceManagement = []argoproj.ManagedNamespaces{
+		a.Spec.ArgoCDCommonSpec.NamespaceManagement = []argoproj.ManagedNamespaces{
 			{Name: "deny-ns", AllowManagedBy: false},
 		}
 	})
@@ -422,7 +428,7 @@ func TestReconcileNamespaceManagement_DeduplicateNamespaces(t *testing.T) {
 	// duplicates are not added to r.ManagedNamespaces.
 	logf.SetLogger(ZapLogger(true))
 	a := makeTestArgoCD(func(a *argoproj.ArgoCD) {
-		a.Spec.NamespaceManagement = []argoproj.ManagedNamespaces{
+		a.Spec.ArgoCDCommonSpec.NamespaceManagement = []argoproj.ManagedNamespaces{
 			{Name: "ns-1", AllowManagedBy: true},
 		}
 	})

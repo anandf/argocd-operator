@@ -73,15 +73,17 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "example-argocd-keycloak", Namespace: ns.Name,
 					Labels: map[string]string{"example": "keycloak"}},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SSO: &argov1beta1api.ArgoCDSSOSpec{
-						Provider: argov1beta1api.SSOProviderTypeKeycloak,
-						Keycloak: &argov1beta1api.ArgoCDKeycloakSpec{
-							RootCA: "---BEGIN---END---",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						SSO: &argov1beta1api.ArgoCDSSOSpec{
+							Provider: argov1beta1api.SSOProviderTypeKeycloak,
+							Keycloak: &argov1beta1api.ArgoCDKeycloakSpec{
+								RootCA: "---BEGIN---END---",
+							},
 						},
-					},
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Route: argov1beta1api.ArgoCDRouteSpec{
-							Enabled: true,
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Route: argov1beta1api.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
 					},
 				},

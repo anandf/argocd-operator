@@ -77,11 +77,13 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: argocdNS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
-					Notifications: argov1beta1api.ArgoCDNotifications{
-						Enabled:          true,
-						SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Notifications: &argov1beta1api.ArgoCDNotifications{
+							Enabled:          true,
+							SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
+						},
 					},
+					SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd)).To(Succeed())
@@ -217,11 +219,13 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: argocdNS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SourceNamespaces: []string{sourceNS1.Name},
-					Notifications: argov1beta1api.ArgoCDNotifications{
-						Enabled:          true,
-						SourceNamespaces: []string{sourceNS1.Name, unmanagedNS.Name},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Notifications: &argov1beta1api.ArgoCDNotifications{
+							Enabled:          true,
+							SourceNamespaces: []string{sourceNS1.Name, unmanagedNS.Name},
+						},
 					},
+					SourceNamespaces: []string{sourceNS1.Name},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd)).To(Succeed())
@@ -306,11 +310,13 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: argocdNS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
-					Notifications: argov1beta1api.ArgoCDNotifications{
-						Enabled:          true,
-						SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Notifications: &argov1beta1api.ArgoCDNotifications{
+							Enabled:          true,
+							SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
+						},
 					},
+					SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd)).To(Succeed())
@@ -409,11 +415,13 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: argocdNS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SourceNamespaces: []string{sourceNS1.Name},
-					Notifications: argov1beta1api.ArgoCDNotifications{
-						Enabled:          false,
-						SourceNamespaces: []string{sourceNS1.Name},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Notifications: &argov1beta1api.ArgoCDNotifications{
+							Enabled:          false,
+							SourceNamespaces: []string{sourceNS1.Name},
+						},
 					},
+					SourceNamespaces: []string{sourceNS1.Name},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd)).To(Succeed())
@@ -481,11 +489,13 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: argocdNS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
-					Notifications: argov1beta1api.ArgoCDNotifications{
-						Enabled:          true,
-						SourceNamespaces: []string{sourceNS1.Name},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Notifications: &argov1beta1api.ArgoCDNotifications{
+							Enabled:          true,
+							SourceNamespaces: []string{sourceNS1.Name},
+						},
 					},
+					SourceNamespaces: []string{sourceNS1.Name, sourceNS2.Name},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd)).To(Succeed())
@@ -559,11 +569,13 @@ var _ = Describe("GitOps Operator Sequential E2E Tests", func() {
 					Namespace: argocdNS.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					SourceNamespaces: []string{sourceNS1.Name},
-					Notifications: argov1beta1api.ArgoCDNotifications{
-						Enabled:          false,
-						SourceNamespaces: []string{sourceNS1.Name},
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Notifications: &argov1beta1api.ArgoCDNotifications{
+							Enabled:          false,
+							SourceNamespaces: []string{sourceNS1.Name},
+						},
 					},
+					SourceNamespaces: []string{sourceNS1.Name},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argocd)).To(Succeed())

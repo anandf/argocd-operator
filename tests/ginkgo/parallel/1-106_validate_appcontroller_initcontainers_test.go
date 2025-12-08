@@ -59,22 +59,24 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						InitContainers: []corev1.Container{{
-							Name:            "argocd-init",
-							Image:           "nginx:latest",
-							ImagePullPolicy: corev1.PullAlways,
-							Resources: corev1.ResourceRequirements{
-								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("50m"),
-									corev1.ResourceMemory: resource.MustParse("64Mi"),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							InitContainers: []corev1.Container{{
+								Name:            "argocd-init",
+								Image:           "nginx:latest",
+								ImagePullPolicy: corev1.PullAlways,
+								Resources: corev1.ResourceRequirements{
+									Limits: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("50m"),
+										corev1.ResourceMemory: resource.MustParse("64Mi"),
+									},
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("10m"),
+										corev1.ResourceMemory: resource.MustParse("32Mi"),
+									},
 								},
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("10m"),
-									corev1.ResourceMemory: resource.MustParse("32Mi"),
-								},
-							},
-						}},
+							}},
+						},
 					},
 				},
 			}

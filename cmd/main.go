@@ -39,6 +39,7 @@ import (
 	"github.com/argoproj-labs/argocd-operator/controllers/argocd"
 	"github.com/argoproj-labs/argocd-operator/controllers/argocdexport"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
+	"github.com/argoproj-labs/argocd-operator/controllers/clusterargocd"
 
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -279,6 +280,18 @@ func main() {
 		FipsConfigChecker: argoutil.NewLinuxFipsConfigChecker(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ArgoCD")
+		os.Exit(1)
+	}
+	if err = (&clusterargocd.ReconcileClusterArgoCD{
+		Client:        client,
+		Scheme:        mgr.GetScheme(),
+		LabelSelector: labelSelectorFlag,
+		K8sClient:     k8sClient,
+		LocalUsers: &argocd.LocalUsersInfo{
+			TokenRenewalTimers: map[string]*argocd.TokenRenewalTimer{},
+		},
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ClusterArgoCD")
 		os.Exit(1)
 	}
 	if err = (&argocdexport.ReconcileArgoCDExport{

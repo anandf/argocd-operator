@@ -69,9 +69,11 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Route: argov1beta1api.ArgoCDRouteSpec{
-							Enabled: true,
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Route: argov1beta1api.ArgoCDRouteSpec{
+								Enabled: true,
+							},
 						},
 					},
 				},
@@ -83,12 +85,12 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 
 			By("enabling debug loglevel and json logformat on various Argo CD workloads")
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec.Server.LogLevel = "debug"
-				ac.Spec.Server.LogFormat = "json"
-				ac.Spec.Repo.LogLevel = "debug"
-				ac.Spec.Repo.LogFormat = "json"
-				ac.Spec.Controller.LogLevel = "debug"
-				ac.Spec.Controller.LogFormat = "json"
+				ac.Spec.ArgoCDCommonSpec.Server.LogLevel = "debug"
+				ac.Spec.ArgoCDCommonSpec.Server.LogFormat = "json"
+				ac.Spec.ArgoCDCommonSpec.Repo.LogLevel = "debug"
+				ac.Spec.ArgoCDCommonSpec.Repo.LogFormat = "json"
+				ac.Spec.ArgoCDCommonSpec.Controller.LogLevel = "debug"
+				ac.Spec.ArgoCDCommonSpec.Controller.LogFormat = "json"
 			})
 
 			// Ensure the given PodTemplate has the expected loglevel/logformat settings

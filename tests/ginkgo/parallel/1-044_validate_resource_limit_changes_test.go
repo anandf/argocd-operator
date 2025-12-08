@@ -59,39 +59,41 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Resources: &corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("50m"),
-								corev1.ResourceMemory: resource.MustParse("200Mi"),
-							},
-							Limits: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("1"),
-								corev1.ResourceMemory: resource.MustParse("200Mi"),
-							},
-						},
-					},
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Resources: &corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("50m"),
-								corev1.ResourceMemory: resource.MustParse("200Mi"),
-							},
-							Limits: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("1"),
-								corev1.ResourceMemory: resource.MustParse("2000Mi"),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Resources: &corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("50m"),
+									corev1.ResourceMemory: resource.MustParse("200Mi"),
+								},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("1"),
+									corev1.ResourceMemory: resource.MustParse("200Mi"),
+								},
 							},
 						},
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Resources: &corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("50m"),
-								corev1.ResourceMemory: resource.MustParse("200Mi"),
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Resources: &corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("50m"),
+									corev1.ResourceMemory: resource.MustParse("200Mi"),
+								},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("1"),
+									corev1.ResourceMemory: resource.MustParse("2000Mi"),
+								},
 							},
-							Limits: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("1"),
-								corev1.ResourceMemory: resource.MustParse("200Mi"),
+						},
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Resources: &corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("50m"),
+									corev1.ResourceMemory: resource.MustParse("200Mi"),
+								},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("1"),
+									corev1.ResourceMemory: resource.MustParse("200Mi"),
+								},
 							},
 						},
 					},
@@ -104,9 +106,9 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 
 			By("updating CPU limit to 2 on every component")
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
-				argoCD.Spec.Server.Resources.Limits[corev1.ResourceCPU] = resource.MustParse("2")
-				argoCD.Spec.Controller.Resources.Limits[corev1.ResourceCPU] = resource.MustParse("2")
-				argoCD.Spec.Repo.Resources.Limits[corev1.ResourceCPU] = resource.MustParse("2")
+				argoCD.Spec.ArgoCDCommonSpec.Server.Resources.Limits[corev1.ResourceCPU] = resource.MustParse("2")
+				argoCD.Spec.ArgoCDCommonSpec.Controller.Resources.Limits[corev1.ResourceCPU] = resource.MustParse("2")
+				argoCD.Spec.ArgoCDCommonSpec.Repo.Resources.Limits[corev1.ResourceCPU] = resource.MustParse("2")
 			})
 
 			// Ensure the given PodTemplate has the expected CPUs

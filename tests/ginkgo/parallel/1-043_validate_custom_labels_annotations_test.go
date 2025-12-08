@@ -60,44 +60,46 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd-sample", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Server: argov1beta1api.ArgoCDServerSpec{
-						Labels: map[string]string{
-							"custom":  "label",
-							"custom2": "server",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Server: argov1beta1api.ArgoCDServerSpec{
+							Labels: map[string]string{
+								"custom":  "label",
+								"custom2": "server",
+							},
+							Annotations: map[string]string{
+								"custom":  "annotation",
+								"custom2": "server",
+							},
 						},
-						Annotations: map[string]string{
-							"custom":  "annotation",
-							"custom2": "server",
+						Repo: argov1beta1api.ArgoCDRepoSpec{
+							Labels: map[string]string{
+								"custom":  "label",
+								"custom2": "repo",
+							},
+							Annotations: map[string]string{
+								"custom":  "annotation",
+								"custom2": "repo",
+							},
 						},
-					},
-					Repo: argov1beta1api.ArgoCDRepoSpec{
-						Labels: map[string]string{
-							"custom":  "label",
-							"custom2": "repo",
+						Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
+							Labels: map[string]string{
+								"custom":  "label",
+								"custom2": "controller",
+							},
+							Annotations: map[string]string{
+								"custom":  "annotation",
+								"custom2": "controller",
+							},
 						},
-						Annotations: map[string]string{
-							"custom":  "annotation",
-							"custom2": "repo",
-						},
-					},
-					Controller: argov1beta1api.ArgoCDApplicationControllerSpec{
-						Labels: map[string]string{
-							"custom":  "label",
-							"custom2": "controller",
-						},
-						Annotations: map[string]string{
-							"custom":  "annotation",
-							"custom2": "controller",
-						},
-					},
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
-						Labels: map[string]string{
-							"custom":  "label",
-							"custom2": "applicationSet",
-						},
-						Annotations: map[string]string{
-							"custom":  "annotation",
-							"custom2": "applicationSet",
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{
+							Labels: map[string]string{
+								"custom":  "label",
+								"custom2": "applicationSet",
+							},
+							Annotations: map[string]string{
+								"custom":  "annotation",
+								"custom2": "applicationSet",
+							},
 						},
 					},
 				},
@@ -146,17 +148,17 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			By("removing custom labels and annotations from ArgoCD CR")
 
 			argocdFixture.Update(argoCD, func(ac *argov1beta1api.ArgoCD) {
-				ac.Spec.Server.Labels = map[string]string{}
-				ac.Spec.Server.Annotations = map[string]string{}
+				ac.Spec.ArgoCDCommonSpec.Server.Labels = map[string]string{}
+				ac.Spec.ArgoCDCommonSpec.Server.Annotations = map[string]string{}
 
-				ac.Spec.Repo.Labels = map[string]string{}
-				ac.Spec.Repo.Annotations = map[string]string{}
+				ac.Spec.ArgoCDCommonSpec.Repo.Labels = map[string]string{}
+				ac.Spec.ArgoCDCommonSpec.Repo.Annotations = map[string]string{}
 
-				ac.Spec.Controller.Labels = map[string]string{}
-				ac.Spec.Controller.Annotations = map[string]string{}
+				ac.Spec.ArgoCDCommonSpec.Controller.Labels = map[string]string{}
+				ac.Spec.ArgoCDCommonSpec.Controller.Annotations = map[string]string{}
 
-				ac.Spec.ApplicationSet.Labels = map[string]string{}
-				ac.Spec.ApplicationSet.Annotations = map[string]string{}
+				ac.Spec.ArgoCDCommonSpec.ApplicationSet.Labels = map[string]string{}
+				ac.Spec.ArgoCDCommonSpec.ApplicationSet.Annotations = map[string]string{}
 			})
 
 			By("verifying labels and annotations have been removed from template specs of Argo CD components")

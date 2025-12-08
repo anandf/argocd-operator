@@ -68,8 +68,10 @@ p, role:with-logs, logs, get, */*, allow`
 					Namespace: ns.Name,
 				},
 				Spec: argov1beta1api.ArgoCDSpec{
-					RBAC: argov1beta1api.ArgoCDRBACSpec{
-						Policy: ptr.To(policyStr),
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						RBAC: argov1beta1api.ArgoCDRBACSpec{
+							Policy: ptr.To(policyStr),
+						},
 					},
 				},
 			}

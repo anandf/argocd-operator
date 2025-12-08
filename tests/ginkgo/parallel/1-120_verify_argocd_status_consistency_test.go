@@ -199,17 +199,19 @@ var _ = Describe("GitOps Operator Parallel E2E Tests", func() {
 			argoCD := &argov1beta1api.ArgoCD{
 				ObjectMeta: metav1.ObjectMeta{Name: "argocd", Namespace: ns.Name},
 				Spec: argov1beta1api.ArgoCDSpec{
-					Controller:     argov1beta1api.ArgoCDApplicationControllerSpec{},
-					ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{},
-					Server:         argov1beta1api.ArgoCDServerSpec{},
-					SSO: &argov1beta1api.ArgoCDSSOSpec{
-						Provider: argov1beta1api.SSOProviderTypeDex,
-						Dex: &argov1beta1api.ArgoCDDexSpec{
-							Config: "hi",
+					ArgoCDCommonSpec: argov1beta1api.ArgoCDCommonSpec{
+						Controller:     argov1beta1api.ArgoCDApplicationControllerSpec{},
+						ApplicationSet: &argov1beta1api.ArgoCDApplicationSet{},
+						Server:         argov1beta1api.ArgoCDServerSpec{},
+						SSO: &argov1beta1api.ArgoCDSSOSpec{
+							Provider: argov1beta1api.SSOProviderTypeDex,
+							Dex: &argov1beta1api.ArgoCDDexSpec{
+								Config: "hi",
+							},
 						},
+						Repo:  argov1beta1api.ArgoCDRepoSpec{},
+						Redis: argov1beta1api.ArgoCDRedisSpec{},
 					},
-					Repo:  argov1beta1api.ArgoCDRepoSpec{},
-					Redis: argov1beta1api.ArgoCDRedisSpec{},
 				},
 			}
 			Expect(k8sClient.Create(ctx, argoCD)).To(Succeed())
