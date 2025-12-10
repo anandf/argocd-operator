@@ -31,6 +31,7 @@ import (
 	argocdoperatorv1beta1 "github.com/argoproj-labs/argocd-operator/api/v1beta1"
 	"github.com/argoproj-labs/argocd-operator/common"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
+	"github.com/argoproj-labs/argocd-operator/controllers/shared"
 )
 
 // getArgoCDRepoServerReplicas will return the size value for the argocd-repo-server replica count if it
@@ -594,73 +595,18 @@ func isRepoServerTLSVerificationRequested(cr *argocdoperatorv1beta1.ArgoCD) bool
 }
 
 // reconcileRepoService will ensure that the Service for the Argo CD repo server is present.
+// reconcileRepoService reconciles the Repo Server service.
+// This now delegates to the shared implementation to avoid code duplication
+// with ClusterArgoCD controller.
 func (r *ReconcileArgoCD) reconcileRepoService(cr *argocdoperatorv1beta1.ArgoCD) error {
-	svc := newServiceWithSuffix("repo-server", "repo-server", cr)
-
-	svcFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
-	if err != nil {
-		return err
-	}
-	if svcFound {
-		if !cr.Spec.Repo.IsEnabled() {
-			argoutil.LogResourceDeletion(log, svc, "repo server is disabled")
-			return r.Delete(context.TODO(), svc)
-		}
-		update, err := ensureAutoTLSAnnotation(r.Client, svc, common.ArgoCDRepoServerTLSSecretName, cr.Spec.Repo.WantsAutoTLS())
-		if err != nil {
-			return err
-		}
-		if update {
-			argoutil.LogResourceUpdate(log, svc, "updating auto tls annotation")
-			return r.Update(context.TODO(), svc)
-		}
-		if cr.Spec.Repo.IsRemote() {
-			argoutil.LogResourceDeletion(log, svc, "remote repo server is configured")
-			return r.Delete(context.TODO(), svc)
-		}
-		return nil // Service found, do nothing
-	}
-
-	if !cr.Spec.Repo.IsEnabled() {
-		return nil
-	}
-
-	// TODO: Existing and current service is not compared and updated
-	svc.Spec.Type = corev1.ServiceTypeClusterIP
-
-	_, err = ensureAutoTLSAnnotation(r.Client, svc, common.ArgoCDRepoServerTLSSecretName, cr.Spec.Repo.WantsAutoTLS())
-	if err != nil {
-		return fmt.Errorf("unable to ensure AutoTLS annotation: %w", err)
-	}
-
-	svc.Spec.Selector = map[string]string{
-		common.ArgoCDKeyName: nameWithSuffix("repo-server", cr),
-	}
-
-	svc.Spec.Ports = []corev1.ServicePort{
-		{
-			Name:       "server",
-			Port:       common.ArgoCDDefaultRepoServerPort,
-			Protocol:   corev1.ProtocolTCP,
-			TargetPort: intstr.FromInt(common.ArgoCDDefaultRepoServerPort),
-		}, {
-			Name:       "metrics",
-			Port:       common.ArgoCDDefaultRepoMetricsPort,
-			Protocol:   corev1.ProtocolTCP,
-			TargetPort: intstr.FromInt(common.ArgoCDDefaultRepoMetricsPort),
-		},
-	}
-
-	if cr.Spec.Repo.IsEnabled() && cr.Spec.Repo.IsRemote() {
-		log.Info("skip creating repo server service, repo remote is enabled")
-		return nil
-	}
-
-	if err := controllerutil.SetControllerReference(cr, svc, r.Scheme); err != nil {
-		return err
-	}
-	argoutil.LogResourceCreation(log, svc)
-	return r.Create(context.TODO(), svc)
+	return shared.ReconcileRepoServerService(
+		cr.Name,      // instanceName
+		cr.Namespace, // namespace
+		cr.Spec.Repo, // repoSpec (from embedded ArgoCDCommonSpec)
+		cr,           // ownerRef
+		r.Scheme,     // scheme
+		r.Client,     // k8sClient
+	)
 }
 
 // reconcileStatusRepo will ensure that the Repo status is updated for the given ArgoCD.

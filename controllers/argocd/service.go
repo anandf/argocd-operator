@@ -17,7 +17,6 @@ package argocd
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +27,7 @@ import (
 	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
 	"github.com/argoproj-labs/argocd-operator/common"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
+	"github.com/argoproj-labs/argocd-operator/controllers/shared"
 )
 
 // getArgoServerServiceType will return the server Service type for the ArgoCD.
@@ -97,36 +97,17 @@ func (r *ReconcileArgoCD) reconcileGrafanaService(cr *argoproj.ArgoCD) error {
 	return nil
 }
 
-// reconcileMetricsService will ensure that the Service for the Argo CD application controller metrics is present.
+// reconcileMetricsService reconciles the Application Controller metrics service.
+// This now delegates to the shared implementation to avoid code duplication
+// with ClusterArgoCD controller.
 func (r *ReconcileArgoCD) reconcileMetricsService(cr *argoproj.ArgoCD) error {
-	svc := newServiceWithSuffix("metrics", "metrics", cr)
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
-	if err != nil {
-		return err
-	}
-	if svcExists {
-		// Service found, do nothing
-		return nil
-	}
-
-	svc.Spec.Selector = map[string]string{
-		common.ArgoCDKeyName: nameWithSuffix("application-controller", cr),
-	}
-
-	svc.Spec.Ports = []corev1.ServicePort{
-		{
-			Name:       "metrics",
-			Port:       8082,
-			Protocol:   corev1.ProtocolTCP,
-			TargetPort: intstr.FromInt(8082),
-		},
-	}
-
-	if err := controllerutil.SetControllerReference(cr, svc, r.Scheme); err != nil {
-		return err
-	}
-	argoutil.LogResourceCreation(log, svc)
-	return r.Create(context.TODO(), svc)
+	return shared.ReconcileMetricsService(
+		cr.Name,      // instanceName
+		cr.Namespace, // namespace
+		cr,           // ownerRef
+		r.Scheme,     // scheme
+		r.Client,     // k8sClient
+	)
 }
 
 // reconcileRedisHAAnnounceServices will ensure that the announce Services are present for Redis when running in HA mode.
@@ -468,77 +449,18 @@ func (r *ReconcileArgoCD) reconcileServerMetricsService(cr *argoproj.ArgoCD) err
 }
 
 // reconcileServerService will ensure that the Service is present for the Argo CD server component.
+// reconcileServerService reconciles the ArgoCD Server service.
+// This now delegates to the shared implementation to avoid code duplication
+// with ClusterArgoCD controller.
 func (r *ReconcileArgoCD) reconcileServerService(cr *argoproj.ArgoCD) error {
-	svc := newServiceWithSuffix("server", "server", cr)
-
-	if _, err := ensureAutoTLSAnnotation(r.Client, svc, common.ArgoCDServerTLSSecretName, cr.Spec.Server.WantsAutoTLS()); err != nil {
-		return fmt.Errorf("unable to ensure AutoTLS annotation: %w", err)
-	}
-
-	svc.Spec.Ports = []corev1.ServicePort{
-		{
-			Name:       "http",
-			Port:       80,
-			Protocol:   corev1.ProtocolTCP,
-			TargetPort: intstr.FromInt(8080),
-		}, {
-			Name:       "https",
-			Port:       443,
-			Protocol:   corev1.ProtocolTCP,
-			TargetPort: intstr.FromInt(8080),
-		},
-	}
-
-	svc.Spec.Selector = map[string]string{
-		common.ArgoCDKeyName: nameWithSuffix("server", cr),
-	}
-
-	svc.Spec.Type = getArgoServerServiceType(cr)
-
-	if err := controllerutil.SetControllerReference(cr, svc, r.Scheme); err != nil {
-		return err
-	}
-
-	existingSVC := &corev1.Service{}
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, existingSVC)
-	if err != nil {
-		return err
-	}
-	if svcExists {
-		changed := false
-		explanation := ""
-		if !cr.Spec.Server.IsEnabled() {
-			argoutil.LogResourceDeletion(log, svc, "argocd server is disabled")
-			return r.Delete(context.TODO(), svc)
-		}
-		update, err := ensureAutoTLSAnnotation(r.Client, existingSVC, common.ArgoCDServerTLSSecretName, cr.Spec.Server.WantsAutoTLS())
-		if err != nil {
-			return err
-		}
-		if update {
-			explanation = "auto tls annotation"
-			changed = true
-		}
-		if !reflect.DeepEqual(svc.Spec.Type, existingSVC.Spec.Type) {
-			existingSVC.Spec.Type = svc.Spec.Type
-			if changed {
-				explanation += ", "
-			}
-			explanation += "service type"
-			changed = true
-		}
-		if changed {
-			argoutil.LogResourceUpdate(log, existingSVC, "updating", explanation)
-			return r.Update(context.TODO(), existingSVC)
-		}
-		return nil
-	}
-
-	if !cr.Spec.Server.IsEnabled() {
-		return nil
-	}
-	argoutil.LogResourceCreation(log, svc)
-	return r.Create(context.TODO(), svc)
+	return shared.ReconcileServerService(
+		cr.Name,        // instanceName
+		cr.Namespace,   // namespace
+		cr.Spec.Server, // serverSpec (from embedded ArgoCDCommonSpec)
+		cr,             // ownerRef (for garbage collection)
+		r.Scheme,       // scheme
+		r.Client,       // k8sClient
+	)
 }
 
 // reconcileServices will ensure that all Services are present for the given ArgoCD.

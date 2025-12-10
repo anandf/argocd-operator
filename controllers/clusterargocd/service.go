@@ -18,6 +18,7 @@ package clusterargocd
 
 import (
 	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
+	"github.com/argoproj-labs/argocd-operator/controllers/shared"
 )
 
 // reconcileServices reconciles all Services for ClusterArgoCD components
@@ -49,37 +50,43 @@ func (r *ReconcileClusterArgoCD) reconcileServices(clusterArgoCD *argoproj.Clust
 	return nil
 }
 
-// reconcileServerService reconciles the ArgoCD Server service
+// reconcileServerService reconciles the ArgoCD Server service.
+// This now delegates to the shared implementation to avoid code duplication
+// with ArgoCD controller.
 func (r *ReconcileClusterArgoCD) reconcileServerService(targetNamespace string, clusterArgoCD *argoproj.ClusterArgoCD) error {
-	log.Info("reconciling Server service", "namespace", targetNamespace)
-
-	// TODO: Implement server service creation/update
-	// This should:
-	// 1. Create Service with proper selector labels
-	// 2. Configure HTTP/HTTPS ports
-	// 3. Set up gRPC port for API
-	// 4. Configure service type (ClusterIP, LoadBalancer, NodePort)
-
-	log.Info("Server service reconciliation not yet fully implemented")
-	return nil
+	return shared.ReconcileServerService(
+		clusterArgoCD.Name,        // instanceName
+		targetNamespace,           // namespace (uses ControlPlaneNamespace)
+		clusterArgoCD.Spec.Server, // serverSpec (from embedded ArgoCDCommonSpec)
+		clusterArgoCD,             // ownerRef (for garbage collection)
+		r.Scheme,                  // scheme
+		r.Client,                  // k8sClient
+	)
 }
 
-// reconcileRepoServerService reconciles the ArgoCD Repo Server service
+// reconcileRepoServerService reconciles the ArgoCD Repo Server service.
+// This now delegates to the shared implementation to avoid code duplication with ArgoCD controller.
 func (r *ReconcileClusterArgoCD) reconcileRepoServerService(targetNamespace string, clusterArgoCD *argoproj.ClusterArgoCD) error {
-	log.Info("reconciling Repo Server service", "namespace", targetNamespace)
-
-	// TODO: Implement repo-server service creation/update
-	log.Info("Repo Server service reconciliation not yet fully implemented")
-	return nil
+	return shared.ReconcileRepoServerService(
+		clusterArgoCD.Name,      // instanceName
+		targetNamespace,         // namespace
+		clusterArgoCD.Spec.Repo, // repoSpec (from embedded ArgoCDCommonSpec)
+		clusterArgoCD,           // ownerRef
+		r.Scheme,                // scheme
+		r.Client,                // k8sClient
+	)
 }
 
-// reconcileApplicationControllerMetricsService reconciles the Application Controller metrics service
+// reconcileApplicationControllerMetricsService reconciles the Application Controller metrics service.
+// This now delegates to the shared implementation to avoid code duplication with ArgoCD controller.
 func (r *ReconcileClusterArgoCD) reconcileApplicationControllerMetricsService(targetNamespace string, clusterArgoCD *argoproj.ClusterArgoCD) error {
-	log.Info("reconciling Application Controller metrics service", "namespace", targetNamespace)
-
-	// TODO: Implement application-controller metrics service creation/update
-	log.Info("Application Controller metrics service reconciliation not yet fully implemented")
-	return nil
+	return shared.ReconcileMetricsService(
+		clusterArgoCD.Name, // instanceName
+		targetNamespace,    // namespace
+		clusterArgoCD,      // ownerRef
+		r.Scheme,           // scheme
+		r.Client,           // k8sClient
+	)
 }
 
 // reconcileRedisService reconciles the Redis service

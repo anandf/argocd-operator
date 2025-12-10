@@ -27,6 +27,7 @@ import (
 	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
 	"github.com/argoproj-labs/argocd-operator/common"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
+	"github.com/argoproj-labs/argocd-operator/controllers/shared"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -427,187 +428,20 @@ func (r *ReconcileArgoCD) reconcileGrafanaDeployment(cr *argoproj.ArgoCD) error 
 
 // reconcileRedisDeployment will ensure the Deployment resource is present for the ArgoCD Redis component.
 func (r *ReconcileArgoCD) reconcileRedisDeployment(cr *argoproj.ArgoCD, useTLS bool) error {
-	deploy := newDeploymentWithSuffix("redis", "redis", cr)
-
-	env := append(proxyEnvVars(), corev1.EnvVar{
-		Name: "REDIS_PASSWORD",
-		ValueFrom: &corev1.EnvVarSource{
-			SecretKeyRef: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: argoutil.GetSecretNameWithSuffix(cr, "redis-initial-password"),
-				},
-				Key: "admin.password",
-			},
+	return shared.ReconcileRedisDeployment(
+		cr.Name,                 // instanceName
+		cr.Namespace,            // namespace
+		cr.Spec.HA,              // haSpec
+		cr.Spec.Redis,           // redisSpec
+		cr.Spec.ImagePullPolicy, // imagePullPolicy
+		cr,                      // ownerRef
+		r.Scheme,                // scheme
+		r.Client,                // k8sClient
+		useTLS,                  // useTLS
+		func(obj interface{}, hint string) error {
+			return applyReconcilerHook(cr, obj, hint)
 		},
-	})
-
-	AddSeccompProfileForOpenShift(r.Client, &deploy.Spec.Template.Spec)
-
-	if !IsOpenShiftCluster() {
-		deploy.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{
-			RunAsUser: int64Ptr(1000),
-		}
-	}
-
-	deploy.Spec.Template.Spec.Containers = []corev1.Container{{
-		Args:            getArgoRedisArgs(useTLS),
-		Image:           getRedisContainerImage(cr),
-		ImagePullPolicy: argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy),
-		Name:            "redis",
-		Ports: []corev1.ContainerPort{
-			{
-				ContainerPort: common.ArgoCDDefaultRedisPort,
-			},
-		},
-		Resources:       getRedisResources(cr),
-		Env:             env,
-		SecurityContext: argoutil.DefaultSecurityContext(),
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      common.ArgoCDRedisServerTLSSecretName,
-				MountPath: "/app/config/redis/tls",
-			},
-		},
-	}}
-
-	deploy.Spec.Template.Spec.ServiceAccountName = fmt.Sprintf("%s-%s", cr.Name, "argocd-redis")
-	deploy.Spec.Template.Spec.Volumes = []corev1.Volume{
-		{
-			Name: common.ArgoCDRedisServerTLSSecretName,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: common.ArgoCDRedisServerTLSSecretName,
-					Optional:   boolPtr(true),
-				},
-			},
-		},
-	}
-
-	if err := applyReconcilerHook(cr, deploy, ""); err != nil {
-		return err
-	}
-
-	existing := newDeploymentWithSuffix("redis", "redis", cr)
-	deplFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
-	if err != nil {
-		return err
-	}
-	if deplFound {
-		if !cr.Spec.Redis.IsEnabled() {
-			// Deployment exists but component enabled flag has been set to false, delete the Deployment
-			argoutil.LogResourceDeletion(log, deploy, "redis is disabled but deployment exists")
-			return r.Delete(context.TODO(), deploy)
-		} else if cr.Spec.Redis.IsRemote() {
-			argoutil.LogResourceDeletion(log, deploy, "remote redis is configured")
-			return r.Delete(context.TODO(), deploy)
-		}
-		if cr.Spec.HA.Enabled {
-			// Deployment exists but HA enabled flag has been set to true, delete the Deployment
-			argoutil.LogResourceDeletion(log, deploy, "redis ha is enabled but non-ha deployment exists")
-			return r.Delete(context.TODO(), deploy)
-		}
-		changed := false
-		explanation := ""
-		actualImage := existing.Spec.Template.Spec.Containers[0].Image
-		desiredImage := getRedisContainerImage(cr)
-		actualImagePullPolicy := existing.Spec.Template.Spec.Containers[0].ImagePullPolicy
-		desiredImagePullPolicy := argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy)
-		if actualImage != desiredImage {
-			existing.Spec.Template.Spec.Containers[0].Image = desiredImage
-			existing.Spec.Template.Labels["image.upgraded"] = time.Now().UTC().Format("01022006-150406-MST")
-			explanation = "container image"
-			changed = true
-		}
-		if actualImagePullPolicy != desiredImagePullPolicy {
-			existing.Spec.Template.Spec.Containers[0].ImagePullPolicy = desiredImagePullPolicy
-			if changed {
-				explanation += ", "
-			}
-			explanation += "image pull policy"
-			changed = true
-		}
-		updateNodePlacement(existing, deploy, &changed, &explanation)
-
-		if !reflect.DeepEqual(deploy.Spec.Template.Spec.Containers[0].Args, existing.Spec.Template.Spec.Containers[0].Args) {
-			existing.Spec.Template.Spec.Containers[0].Args = deploy.Spec.Template.Spec.Containers[0].Args
-			if changed {
-				explanation += ", "
-			}
-			explanation += "container args"
-			changed = true
-		}
-
-		if !reflect.DeepEqual(existing.Spec.Template.Spec.Containers[0].Env,
-			deploy.Spec.Template.Spec.Containers[0].Env) {
-			existing.Spec.Template.Spec.Containers[0].Env = deploy.Spec.Template.Spec.Containers[0].Env
-			if changed {
-				explanation += ", "
-			}
-			explanation += "container env"
-			changed = true
-		}
-
-		if !reflect.DeepEqual(deploy.Spec.Template.Spec.Containers[0].Resources, existing.Spec.Template.Spec.Containers[0].Resources) {
-			existing.Spec.Template.Spec.Containers[0].Resources = deploy.Spec.Template.Spec.Containers[0].Resources
-			if changed {
-				explanation += ", "
-			}
-			explanation += "container resources"
-			changed = true
-		}
-
-		if !reflect.DeepEqual(deploy.Spec.Template.Spec.Containers[0].SecurityContext, existing.Spec.Template.Spec.Containers[0].SecurityContext) {
-			existing.Spec.Template.Spec.Containers[0].SecurityContext = deploy.Spec.Template.Spec.Containers[0].SecurityContext
-			if changed {
-				explanation += ", "
-			}
-			explanation += "container security context"
-			changed = true
-		}
-
-		if !reflect.DeepEqual(deploy.Spec.Template.Spec.SecurityContext, existing.Spec.Template.Spec.SecurityContext) {
-			existing.Spec.Template.Spec.SecurityContext = deploy.Spec.Template.Spec.SecurityContext
-			if changed {
-				explanation += ", "
-			}
-			explanation += "pod security context"
-			changed = true
-		}
-
-		if !reflect.DeepEqual(deploy.Spec.Template.Spec.ServiceAccountName, existing.Spec.Template.Spec.ServiceAccountName) {
-			existing.Spec.Template.Spec.ServiceAccountName = deploy.Spec.Template.Spec.ServiceAccountName
-			if changed {
-				explanation += ", "
-			}
-			explanation += "serviceAccountName"
-			changed = true
-		}
-
-		if changed {
-			argoutil.LogResourceUpdate(log, existing, "updating", explanation)
-			return r.Update(context.TODO(), existing)
-		}
-		return nil // Deployment found with nothing to do, move along...
-	}
-
-	if cr.Spec.Redis.IsEnabled() && cr.Spec.Redis.IsRemote() {
-		log.Info("Custom Redis Endpoint. Skipping starting redis.")
-		return nil
-	}
-
-	if !cr.Spec.Redis.IsEnabled() {
-		log.Info("Redis disabled. Skipping starting redis.")
-		return nil
-	}
-
-	if cr.Spec.HA.Enabled {
-		return nil // HA enabled, do nothing.
-	}
-	if err := controllerutil.SetControllerReference(cr, deploy, r.Scheme); err != nil {
-		return err
-	}
-	argoutil.LogResourceCreation(log, deploy)
-	return r.Create(context.TODO(), deploy)
+	)
 }
 
 // reconcileRedisHAProxyDeployment will ensure the Deployment resource is present for the Redis HA Proxy component.
