@@ -295,12 +295,6 @@ func createNamespaceManagedByClusterArgoCDLabel(r *ReconcileArgoCD, n string, ma
 	if managedBy != "" {
 		ns.Labels = map[string]string{common.ArgoCDManagedByClusterArgoCDLabel: managedBy}
 	}
-
-	if r.ManagedSourceNamespaces == nil {
-		r.ManagedSourceNamespaces = make(map[string]string)
-	}
-	r.ManagedSourceNamespaces[ns.Name] = ""
-
 	return r.Create(context.TODO(), ns)
 }
 
