@@ -134,7 +134,7 @@ func TestReconcileClusterArgoCD_reconcileRedisHAHealthConfigMap(t *testing.T) {
 	// Modify ConfigMap data to simulate external changes
 	existingCM := &corev1.ConfigMap{}
 
-	exists, err := argoutil.IsObjectFound(cl, cr.Namespace, common.ArgoCDRedisHAHealthConfigMapName, existingCM)
+	exists, err := argoutil.IsObjectFound(cl, cr.Spec.ControlPlaneNamespace, common.ArgoCDRedisHAHealthConfigMapName, existingCM)
 	assert.Nil(t, err)
 	assert.True(t, exists)
 	existingCM.Data["redis_liveness.sh"] = "modified_script_content"
@@ -143,7 +143,7 @@ func TestReconcileClusterArgoCD_reconcileRedisHAHealthConfigMap(t *testing.T) {
 	// Reconcile again and verify changes are reverted
 	assert.NoError(t, r.reconcileRedisHAHealthConfigMap(cr, false))
 	existingCMAfter := &corev1.ConfigMap{}
-	exists, err = argoutil.IsObjectFound(cl, cr.Namespace, common.ArgoCDRedisHAHealthConfigMapName, existingCMAfter)
+	exists, err = argoutil.IsObjectFound(cl, cr.Spec.ControlPlaneNamespace, common.ArgoCDRedisHAHealthConfigMapName, existingCMAfter)
 	assert.True(t, exists)
 	assert.Nil(t, err)
 	assert.Equal(t, getRedisLivenessScript(false), existingCMAfter.Data["redis_liveness.sh"])
@@ -151,7 +151,7 @@ func TestReconcileClusterArgoCD_reconcileRedisHAHealthConfigMap(t *testing.T) {
 	// Disable HA and ensure ConfigMap is deleted
 	cr.Spec.HA.Enabled = false
 	assert.NoError(t, r.reconcileRedisHAHealthConfigMap(cr, false))
-	exists, err = argoutil.IsObjectFound(cl, cr.Namespace, common.ArgoCDRedisHAHealthConfigMapName, existingCM)
+	exists, err = argoutil.IsObjectFound(cl, cr.Spec.ControlPlaneNamespace, common.ArgoCDRedisHAHealthConfigMapName, existingCM)
 	assert.Nil(t, err)
 	assert.False(t, exists)
 }
@@ -177,7 +177,7 @@ func TestReconcileClusterArgoCD_reconcileRedisHAConfigMap(t *testing.T) {
 
 	// Modify ConfigMap data to simulate external changes
 	existingCM := &corev1.ConfigMap{}
-	exists, err := argoutil.IsObjectFound(cl, cr.Namespace, common.ArgoCDRedisHAConfigMapName, existingCM)
+	exists, err := argoutil.IsObjectFound(cl, cr.Spec.ControlPlaneNamespace, common.ArgoCDRedisHAConfigMapName, existingCM)
 	assert.Nil(t, err)
 	assert.True(t, exists)
 	existingCM.Data["haproxy.cfg"] = "modified_config_content"
@@ -186,7 +186,7 @@ func TestReconcileClusterArgoCD_reconcileRedisHAConfigMap(t *testing.T) {
 	// Reconcile again and verify changes are reverted
 	assert.NoError(t, r.reconcileRedisHAConfigMap(cr, false))
 	existingCMAfter := &corev1.ConfigMap{}
-	exists, err = argoutil.IsObjectFound(cl, cr.Namespace, common.ArgoCDRedisHAConfigMapName, existingCMAfter)
+	exists, err = argoutil.IsObjectFound(cl, cr.Spec.ControlPlaneNamespace, common.ArgoCDRedisHAConfigMapName, existingCMAfter)
 	assert.Nil(t, err)
 	assert.True(t, exists)
 	assert.Equal(t, getRedisHAProxyConfig(cr, false), existingCMAfter.Data["haproxy.cfg"])
@@ -194,7 +194,7 @@ func TestReconcileClusterArgoCD_reconcileRedisHAConfigMap(t *testing.T) {
 	// Disable HA and ensure ConfigMap is deleted
 	cr.Spec.HA.Enabled = false
 	assert.NoError(t, r.reconcileRedisHAConfigMap(cr, false))
-	exists, err = argoutil.IsObjectFound(cl, cr.Namespace, common.ArgoCDRedisHAConfigMapName, existingCM)
+	exists, err = argoutil.IsObjectFound(cl, cr.Spec.ControlPlaneNamespace, common.ArgoCDRedisHAConfigMapName, existingCM)
 	assert.Nil(t, err)
 	assert.False(t, exists)
 }
@@ -1667,7 +1667,7 @@ func TestReconcileClusterArgoCD_RemovesLegacyLogEnforceFlag(t *testing.T) {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      common.ArgoCDConfigMapName,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		},
 		Data: map[string]string{
 			"server.rbac.log.enforce.enable": "true",

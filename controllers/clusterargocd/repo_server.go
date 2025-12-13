@@ -259,7 +259,7 @@ func (r *ReconcileClusterArgoCD) reconcileRepoDeployment(cr *argocdoperatorv1bet
 			if len(containers[i].Image) == 0 {
 				containers[i].Image = image
 				msg := fmt.Sprintf("no image specified for sidecar container \"%s\" in ArgoCD custom resource \"%s/%s\", using default image",
-					containers[i].Name, cr.Namespace, cr.Name)
+					containers[i].Name, cr.Spec.ControlPlaneNamespace, cr.Name)
 				log.Info(msg)
 			}
 		}
@@ -368,7 +368,7 @@ func (r *ReconcileClusterArgoCD) reconcileRepoDeployment(cr *argocdoperatorv1bet
 	}
 
 	existing := newDeploymentWithSuffix("repo-server", "repo-server", cr)
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}
@@ -597,7 +597,7 @@ func isRepoServerTLSVerificationRequested(cr *argocdoperatorv1beta1.ClusterArgoC
 func (r *ReconcileClusterArgoCD) reconcileRepoService(cr *argocdoperatorv1beta1.ClusterArgoCD) error {
 	svc := newServiceWithSuffix("repo-server", "repo-server", cr)
 
-	svcFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcFound, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -668,7 +668,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusRepo(cr *argocdoperatorv1beta1.C
 	status := "Unknown"
 
 	deploy := newDeploymentWithSuffix("repo-server", "repo-server", cr)
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, deploy.Name, deploy)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, deploy.Name, deploy)
 	if err != nil {
 		argocdStatus.Repo = "Failed"
 		return err
@@ -706,7 +706,7 @@ func (r *ReconcileClusterArgoCD) reconcileRepoServerTLSSecret(cr *argocdoperator
 
 	log.Info("reconciling repo-server TLS secret")
 
-	tlsSecretName := types.NamespacedName{Namespace: cr.Namespace, Name: common.ArgoCDRepoServerTLSSecretName}
+	tlsSecretName := types.NamespacedName{Namespace: cr.Spec.ControlPlaneNamespace, Name: common.ArgoCDRepoServerTLSSecretName}
 	err := r.Get(context.TODO(), tlsSecretName, &tlsSecretObj)
 	if err != nil {
 		if !errors.IsNotFound(err) {

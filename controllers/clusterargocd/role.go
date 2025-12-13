@@ -24,7 +24,7 @@ func newRole(name string, rules []v1.PolicyRule, cr *argoproj.ClusterArgoCD) *v1
 	return &v1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      generateResourceName(name, cr),
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 		Rules: rules,
@@ -48,7 +48,7 @@ func generateResourceName(argoComponentName string, cr *argoproj.ClusterArgoCD) 
 
 // GenerateUniqueResourceName generates unique names for cluster scoped resources
 func GenerateUniqueResourceName(argoComponentName string, cr *argoproj.ClusterArgoCD) string {
-	return cr.Name + "-" + cr.Namespace + "-" + argoComponentName
+	return cr.Name + "-" + cr.Spec.ControlPlaneNamespace + "-" + argoComponentName
 }
 
 func newClusterRole(name string, rules []v1.PolicyRule, cr *argoproj.ClusterArgoCD) *v1.ClusterRole {
@@ -125,7 +125,7 @@ func (r *ReconcileClusterArgoCD) reconcileRole(name string, policyRules []v1.Pol
 		// only skip creation of dex and redisHa roles for namespaces that no argocd instance is deployed in
 		if len(list.Items) < 1 {
 			// namespace doesn't contain argocd instance, so skip all the ArgoCD internal roles
-			if cr.Namespace != namespace.Name && (name != common.ArgoCDApplicationControllerComponent && name != common.ArgoCDServerComponent) {
+			if cr.Spec.ControlPlaneNamespace != namespace.Name && (name != common.ArgoCDApplicationControllerComponent && name != common.ArgoCDServerComponent) {
 				continue
 			}
 		}
@@ -152,7 +152,7 @@ func (r *ReconcileClusterArgoCD) reconcileRole(name string, policyRules []v1.Pol
 			}
 
 			// Only set ownerReferences for roles in same namespace as ArgoCD CR
-			if cr.Namespace == role.Namespace {
+			if cr.Spec.ControlPlaneNamespace == role.Namespace {
 				if err = controllerutil.SetControllerReference(cr, role, r.Scheme); err != nil {
 					return nil, fmt.Errorf("failed to set ArgoCD CR \"%s\" as owner for role \"%s\": %s", cr.Name, role.Name, err)
 				}
@@ -234,7 +234,7 @@ func (r *ReconcileClusterArgoCD) reconcileRoleForApplicationSourceNamespaces(nam
 		if value, ok := namespace.Labels[common.ArgoCDManagedByLabel]; ok && value != "" {
 			log.Info(fmt.Sprintf("Skipping reconciling resources for namespace %s as it is already managed-by namespace %s.", namespace.Name, value))
 			// if managed-by-cluster-argocd label is also present, remove the namespace from the ManagedSourceNamespaces.
-			if val, ok1 := namespace.Labels[common.ArgoCDManagedByClusterArgoCDLabel]; ok1 && val == cr.Namespace {
+			if val, ok1 := namespace.Labels[common.ArgoCDManagedByClusterArgoCDLabel]; ok1 && val == cr.Spec.ControlPlaneNamespace {
 				delete(r.ManagedSourceNamespaces, namespace.Name)
 				if err := r.cleanupUnmanagedSourceNamespaceResources(cr, namespace.Name); err != nil {
 					log.Error(err, fmt.Sprintf("error cleaning up resources for namespace %s", namespace.Name))
@@ -244,7 +244,7 @@ func (r *ReconcileClusterArgoCD) reconcileRoleForApplicationSourceNamespaces(nam
 		}
 
 		// reconcile roles only if another ArgoCD instance is not already set as value for managed-by-cluster-argocd label
-		if value, ok := namespace.Labels[common.ArgoCDManagedByClusterArgoCDLabel]; ok && value != cr.Namespace {
+		if value, ok := namespace.Labels[common.ArgoCDManagedByClusterArgoCDLabel]; ok && value != cr.Spec.ControlPlaneNamespace {
 			log.Info(fmt.Sprintf("Namespace already has label set to argocd instance %s. Thus, skipping namespace %s", value, namespace.Name))
 			continue
 		}
@@ -284,8 +284,8 @@ func (r *ReconcileClusterArgoCD) reconcileRoleForApplicationSourceNamespaces(nam
 		if namespace.Labels == nil {
 			namespace.Labels = make(map[string]string)
 		}
-		namespace.Labels[common.ArgoCDManagedByClusterArgoCDLabel] = cr.Namespace
-		argoutil.LogResourceUpdate(log, namespace, fmt.Sprintf("adding label '%s=%s'", common.ArgoCDManagedByClusterArgoCDLabel, cr.Namespace))
+		namespace.Labels[common.ArgoCDManagedByClusterArgoCDLabel] = cr.Spec.ControlPlaneNamespace
+		argoutil.LogResourceUpdate(log, namespace, fmt.Sprintf("adding label '%s=%s'", common.ArgoCDManagedByClusterArgoCDLabel, cr.Spec.ControlPlaneNamespace))
 		if err := r.Update(context.TODO(), namespace); err != nil {
 			log.Error(err, fmt.Sprintf("failed to add label from namespace [%s]", namespace.Name))
 		}

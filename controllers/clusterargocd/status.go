@@ -105,7 +105,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusApplicationController(cr *argopr
 	status := "Unknown"
 
 	ss := newStatefulSetWithSuffix("application-controller", "application-controller", cr)
-	ssExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ss.Name, ss)
+	ssExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ss.Name, ss)
 	if err != nil {
 		argocdStatus.ApplicationController = "Failed"
 		return err
@@ -129,7 +129,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusApplicationSetController(cr *arg
 	status := "Unknown"
 
 	deploy := newDeploymentWithSuffix("applicationset-controller", "controller", cr)
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, deploy.Name, deploy)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, deploy.Name, deploy)
 	if err != nil {
 		argocdStatus.ApplicationSetController = "Failed"
 		return err
@@ -163,7 +163,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusSSO(cr *argoproj.ClusterArgoCD, 
 		// A) If Dex is enabled
 
 		deploy := newDeploymentWithSuffix("dex-server", "dex-server", cr)
-		deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, deploy.Name, deploy)
+		deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, deploy.Name, deploy)
 		if err != nil {
 			argocdStatus.SSO = "Failed"
 			return err
@@ -241,7 +241,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusRedis(cr *argoproj.ClusterArgoCD
 
 	if !cr.Spec.HA.Enabled {
 		deploy := newDeploymentWithSuffix("redis", "redis", cr)
-		deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, deploy.Name, deploy)
+		deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, deploy.Name, deploy)
 		if err != nil {
 			argocdStatus.Redis = "Failed"
 			return err
@@ -265,7 +265,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusRedis(cr *argoproj.ClusterArgoCD
 		}
 	} else {
 		ss := newStatefulSetWithSuffix("redis-ha-server", "redis-ha-server", cr)
-		ssExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ss.Name, ss)
+		ssExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ss.Name, ss)
 		if err != nil {
 			return err
 		}
@@ -289,7 +289,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusServer(cr *argoproj.ClusterArgoC
 	status := "Unknown"
 
 	deploy := newDeploymentWithSuffix("server", "server", cr)
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, deploy.Name, deploy)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, deploy.Name, deploy)
 	if err != nil {
 		argocdStatus.Server = "Failed"
 		return err
@@ -321,7 +321,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusNotifications(cr *argoproj.Clust
 	status := "Unknown"
 
 	deploy := newDeploymentWithSuffix("notifications-controller", "controller", cr)
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, deploy.Name, deploy)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, deploy.Name, deploy)
 	if err != nil {
 		argocdStatus.NotificationsController = "Failed"
 		return err
@@ -371,7 +371,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusHost(cr *argoproj.ClusterArgoCD,
 			LabelSelector: labels.SelectorFromSet(map[string]string{
 				"app.kubernetes.io/name": route.Name,
 			}),
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		}
 
 		if err := r.List(context.TODO(), routeList, opts); err != nil {
@@ -410,7 +410,7 @@ func (r *ReconcileClusterArgoCD) reconcileStatusHost(cr *argoproj.ClusterArgoCD,
 		}
 	} else if cr.Spec.Server.Ingress.Enabled {
 		ingress := newIngressWithSuffix("server", cr)
-		ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ingress.Name, ingress)
+		ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ingress.Name, ingress)
 		if err != nil {
 			argocdStatus.Phase = "Failed"
 			return err

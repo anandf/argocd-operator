@@ -50,7 +50,7 @@ func (r *ReconcileClusterArgoCD) ReconcileRedisNetworkPolicy(cr *argoproj.Cluste
 	networkPolicy := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", cr.Name, RedisNetworkPolicy),
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
@@ -121,11 +121,11 @@ func (r *ReconcileClusterArgoCD) ReconcileRedisNetworkPolicy(cr *argoproj.Cluste
 	existing := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", cr.Name, RedisNetworkPolicy),
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		},
 	}
 
-	npExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	npExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (r *ReconcileClusterArgoCD) ReconcileRedisHANetworkPolicy(cr *argoproj.Clus
 	networkPolicy := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", cr.Name, RedisHANetworkPolicy),
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
@@ -246,11 +246,11 @@ func (r *ReconcileClusterArgoCD) ReconcileRedisHANetworkPolicy(cr *argoproj.Clus
 	existing := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", cr.Name, RedisHANetworkPolicy),
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		},
 	}
 
-	npExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	npExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}

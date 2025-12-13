@@ -42,7 +42,7 @@ func newIngress(cr *argoproj.ClusterArgoCD) *networkingv1.Ingress {
 	return &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -95,7 +95,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoServerIngress(cr *argoproj.Cluster
 	ingress := newIngressWithSuffix("server", cr)
 	existingIngress := newIngressWithSuffix("server", cr)
 
-	objectFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ingress.Name, existingIngress)
+	objectFound, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ingress.Name, existingIngress)
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoServerIngress(cr *argoproj.Cluster
 func (r *ReconcileClusterArgoCD) reconcileArgoServerGRPCIngress(cr *argoproj.ClusterArgoCD) error {
 	ingress := newIngressWithSuffix("grpc", cr)
 
-	ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ingress.Name, ingress)
+	ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ingress.Name, ingress)
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoServerGRPCIngress(cr *argoproj.Clu
 // reconcileGrafanaIngress will ensure that the ArgoCD Server GRPC Ingress is present.
 func (r *ReconcileClusterArgoCD) reconcileGrafanaIngress(cr *argoproj.ClusterArgoCD) error {
 	ingress := newIngressWithSuffix("grafana", cr)
-	ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ingress.Name, ingress)
+	ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ingress.Name, ingress)
 	if err != nil {
 		return err
 	}
@@ -329,7 +329,7 @@ func (r *ReconcileClusterArgoCD) reconcileGrafanaIngress(cr *argoproj.ClusterArg
 // reconcilePrometheusIngress will ensure that the Prometheus Ingress is present.
 func (r *ReconcileClusterArgoCD) reconcilePrometheusIngress(cr *argoproj.ClusterArgoCD) error {
 	ingress := newIngressWithSuffix("prometheus", cr)
-	ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ingress.Name, ingress)
+	ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ingress.Name, ingress)
 	if err != nil {
 		return err
 	}
@@ -415,7 +415,7 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusIngress(cr *argoproj.Cluster
 // reconcileApplicationSetControllerIngress will ensure that the ApplicationSetController Ingress is present.
 func (r *ReconcileClusterArgoCD) reconcileApplicationSetControllerIngress(cr *argoproj.ClusterArgoCD) error {
 	ingress := newIngressWithSuffix(common.ApplicationSetServiceNameSuffix, cr)
-	ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ingress.Name, ingress)
+	ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ingress.Name, ingress)
 	if err != nil {
 		return err
 	}

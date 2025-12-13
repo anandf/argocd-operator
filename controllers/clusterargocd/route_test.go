@@ -615,7 +615,7 @@ func TestReconcileRouteTLSConfig(t *testing.T) {
 				secret := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      common.ArgoCDServerTLSSecretName,
-						Namespace: cr.Namespace,
+						Namespace: cr.Spec.ControlPlaneNamespace,
 					},
 				}
 				err := k8sClient.Create(context.Background(), secret)
@@ -641,7 +641,7 @@ func TestReconcileRouteTLSConfig(t *testing.T) {
 				secret := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      common.ArgoCDServerTLSSecretName,
-						Namespace: cr.Namespace,
+						Namespace: cr.Spec.ControlPlaneNamespace,
 						Annotations: map[string]string{
 							"service.beta.openshift.io/originating-service-name": serviceName,
 						},
@@ -693,7 +693,7 @@ func TestIsCreatedByServiceCA(t *testing.T) {
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      common.ArgoCDServerTLSSecretName,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Annotations: map[string]string{
 				"service.beta.openshift.io/originating-service-name": serviceName,
 			},

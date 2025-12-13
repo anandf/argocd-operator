@@ -44,7 +44,7 @@ func newStatefulSet(cr *argoproj.ClusterArgoCD) *appsv1.StatefulSet {
 	return &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -421,7 +421,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisStatefulSet(cr *argoproj.ClusterA
 	}
 
 	existing := newStatefulSetWithSuffix("redis-ha-server", "redis", cr)
-	ssExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	ssExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}
@@ -863,7 +863,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationControllerStatefulSet(cr *a
 	}
 
 	existing := newStatefulSetWithSuffix("application-controller", "application-controller", cr)
-	ssExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	ssExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}
@@ -1092,7 +1092,7 @@ func containsInvalidImage(cr argoproj.ClusterArgoCD, r ReconcileClusterArgoCD) (
 	podList := &corev1.PodList{}
 	applicationControllerListOption := client.MatchingLabels{common.ArgoCDKeyName: fmt.Sprintf("%s-%s", cr.Name, "application-controller")}
 
-	if err := r.List(context.TODO(), podList, applicationControllerListOption, client.InNamespace(cr.Namespace)); err != nil {
+	if err := r.List(context.TODO(), podList, applicationControllerListOption, client.InNamespace(cr.Spec.ControlPlaneNamespace)); err != nil {
 		log.Error(err, "Failed to list Pods")
 		return false, err
 	}
@@ -1104,7 +1104,7 @@ func containsInvalidImage(cr argoproj.ClusterArgoCD, r ReconcileClusterArgoCD) (
 
 	if len(podList.Items) != 1 {
 		// There should only be 0 or 1. If this message is printed, it suggests a problem.
-		log.Info("Unexpected number of pods in 'containsInvalidImage' pod list", "podListItems", fmt.Sprintf("%d", len(podList.Items)), "namespace", cr.Namespace)
+		log.Info("Unexpected number of pods in 'containsInvalidImage' pod list", "podListItems", fmt.Sprintf("%d", len(podList.Items)), "namespace", cr.Spec.ControlPlaneNamespace)
 		return false, nil
 	}
 

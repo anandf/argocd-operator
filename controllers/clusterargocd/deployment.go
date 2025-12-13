@@ -51,7 +51,7 @@ func (r *ReconcileClusterArgoCD) getArgoCDExport(cr *argoproj.ClusterArgoCD) (*a
 		return nil, nil
 	}
 
-	namespace := cr.Namespace
+	namespace := cr.Spec.ControlPlaneNamespace
 	if cr.Spec.Import.Namespace != nil && len(*cr.Spec.Import.Namespace) > 0 {
 		namespace = *cr.Spec.Import.Namespace
 	}
@@ -77,7 +77,7 @@ func getArgoExportSecretName(export *argoprojv1alpha1.ArgoCDExport) string {
 
 func getArgoImportBackend(client client.Client, cr *argoproj.ClusterArgoCD) (string, error) {
 	backend := common.ArgoCDExportStorageBackendLocal
-	namespace := cr.Namespace
+	namespace := cr.Spec.ControlPlaneNamespace
 	if cr.Spec.Import != nil && cr.Spec.Import.Namespace != nil && len(*cr.Spec.Import.Namespace) > 0 {
 		namespace = *cr.Spec.Import.Namespace
 	}
@@ -328,7 +328,7 @@ func newDeployment(cr *argoproj.ClusterArgoCD) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -486,7 +486,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisDeployment(cr *argoproj.ClusterAr
 	}
 
 	existing := newDeploymentWithSuffix("redis", "redis", cr)
-	deplFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	deplFound, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}
@@ -801,7 +801,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAProxyDeployment(cr *argoproj.Cl
 	}
 
 	existing := newDeploymentWithSuffix("redis-ha-haproxy", "redis", cr)
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}
@@ -1142,7 +1142,7 @@ func (r *ReconcileClusterArgoCD) reconcileServerDeployment(cr *argoproj.ClusterA
 	}
 
 	existing := newDeploymentWithSuffix("server", "server", cr)
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}

@@ -90,7 +90,7 @@ func newPrometheus(cr *argoproj.ClusterArgoCD) *monitoringv1.Prometheus {
 	return &monitoringv1.Prometheus{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -101,7 +101,7 @@ func newServiceMonitor(cr *argoproj.ClusterArgoCD) *monitoringv1.ServiceMonitor 
 	return &monitoringv1.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -128,7 +128,7 @@ func newServiceMonitorWithSuffix(suffix string, cr *argoproj.ClusterArgoCD) *mon
 // reconcileMetricsServiceMonitor will ensure that the ServiceMonitor is present for the ArgoCD metrics Service.
 func (r *ReconcileClusterArgoCD) reconcileMetricsServiceMonitor(cr *argoproj.ClusterArgoCD) error {
 	sm := newServiceMonitorWithSuffix(common.ArgoCDKeyMetrics, cr)
-	smExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, sm.Name, sm)
+	smExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, sm.Name, sm)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (r *ReconcileClusterArgoCD) reconcileMetricsServiceMonitor(cr *argoproj.Clu
 // reconcilePrometheus will ensure that Prometheus is present for ArgoCD metrics.
 func (r *ReconcileClusterArgoCD) reconcilePrometheus(cr *argoproj.ClusterArgoCD) error {
 	prometheus := newPrometheus(cr)
-	prExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, prometheus.Name, prometheus)
+	prExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, prometheus.Name, prometheus)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheus(cr *argoproj.ClusterArgoCD)
 // reconcileRepoServerServiceMonitor will ensure that the ServiceMonitor is present for the Repo Server metrics Service.
 func (r *ReconcileClusterArgoCD) reconcileRepoServerServiceMonitor(cr *argoproj.ClusterArgoCD) error {
 	sm := newServiceMonitorWithSuffix("repo-server-metrics", cr)
-	smExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, sm.Name, sm)
+	smExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, sm.Name, sm)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func (r *ReconcileClusterArgoCD) reconcileRepoServerServiceMonitor(cr *argoproj.
 // reconcileServerMetricsServiceMonitor will ensure that the ServiceMonitor is present for the ArgoCD Server metrics Service.
 func (r *ReconcileClusterArgoCD) reconcileServerMetricsServiceMonitor(cr *argoproj.ClusterArgoCD) error {
 	sm := newServiceMonitorWithSuffix("server-metrics", cr)
-	smExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, sm.Name, sm)
+	smExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, sm.Name, sm)
 	if err != nil {
 		return err
 	}
@@ -278,9 +278,9 @@ func (r *ReconcileClusterArgoCD) reconcileServerMetricsServiceMonitor(cr *argopr
 // reconcilePrometheusRule reconciles the PrometheusRule that triggers alerts based on workload statuses
 func (r *ReconcileClusterArgoCD) reconcilePrometheusRule(cr *argoproj.ClusterArgoCD) error {
 
-	promRule := newPrometheusRule(cr.Namespace, "argocd-component-status-alert")
+	promRule := newPrometheusRule(cr.Spec.ControlPlaneNamespace, "argocd-component-status-alert")
 
-	prExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, promRule.Name, promRule)
+	prExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, promRule.Name, promRule)
 	if err != nil {
 		return err
 	}
@@ -307,11 +307,11 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusRule(cr *argoproj.ClusterArg
 				{
 					Alert: "ApplicationControllerNotReady",
 					Annotations: map[string]string{
-						"message": fmt.Sprintf("application controller deployment for Argo CD instance in namespace %s is not running", cr.Namespace),
+						"message": fmt.Sprintf("application controller deployment for Argo CD instance in namespace %s is not running", cr.Spec.ControlPlaneNamespace),
 					},
 					Expr: intstr.IntOrString{
 						Type:   intstr.String,
-						StrVal: fmt.Sprintf("kube_statefulset_status_replicas{statefulset=\"%s\", namespace=\"%s\"} != kube_statefulset_status_replicas_ready{statefulset=\"%s\", namespace=\"%s\"} ", cr.Name+"-application-controller", cr.Namespace, cr.Name+"-application-controller", cr.Namespace),
+						StrVal: fmt.Sprintf("kube_statefulset_status_replicas{statefulset=\"%s\", namespace=\"%s\"} != kube_statefulset_status_replicas_ready{statefulset=\"%s\", namespace=\"%s\"} ", cr.Name+"-application-controller", cr.Spec.ControlPlaneNamespace, cr.Name+"-application-controller", cr.Spec.ControlPlaneNamespace),
 					},
 					For: ptr.To((monitoringv1.Duration)("1m")),
 					Labels: map[string]string{
@@ -321,11 +321,11 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusRule(cr *argoproj.ClusterArg
 				{
 					Alert: "ServerNotReady",
 					Annotations: map[string]string{
-						"message": fmt.Sprintf("server deployment for Argo CD instance in namespace %s is not running", cr.Namespace),
+						"message": fmt.Sprintf("server deployment for Argo CD instance in namespace %s is not running", cr.Spec.ControlPlaneNamespace),
 					},
 					Expr: intstr.IntOrString{
 						Type:   intstr.String,
-						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-server", cr.Namespace, cr.Name+"-server", cr.Namespace),
+						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-server", cr.Spec.ControlPlaneNamespace, cr.Name+"-server", cr.Spec.ControlPlaneNamespace),
 					},
 					For: ptr.To((monitoringv1.Duration)("1m")),
 					Labels: map[string]string{
@@ -335,11 +335,11 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusRule(cr *argoproj.ClusterArg
 				{
 					Alert: "RepoServerNotReady",
 					Annotations: map[string]string{
-						"message": fmt.Sprintf("repo server deployment for Argo CD instance in namespace %s is not running", cr.Namespace),
+						"message": fmt.Sprintf("repo server deployment for Argo CD instance in namespace %s is not running", cr.Spec.ControlPlaneNamespace),
 					},
 					Expr: intstr.IntOrString{
 						Type:   intstr.String,
-						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-repo-server", cr.Namespace, cr.Name+"-repo-server", cr.Namespace),
+						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-repo-server", cr.Spec.ControlPlaneNamespace, cr.Name+"-repo-server", cr.Spec.ControlPlaneNamespace),
 					},
 					For: ptr.To((monitoringv1.Duration)("1m")),
 					Labels: map[string]string{
@@ -349,11 +349,11 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusRule(cr *argoproj.ClusterArg
 				{
 					Alert: "ApplicationSetControllerNotReady",
 					Annotations: map[string]string{
-						"message": fmt.Sprintf("applicationSet controller deployment for Argo CD instance in namespace %s is not running", cr.Namespace),
+						"message": fmt.Sprintf("applicationSet controller deployment for Argo CD instance in namespace %s is not running", cr.Spec.ControlPlaneNamespace),
 					},
 					Expr: intstr.IntOrString{
 						Type:   intstr.String,
-						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-applicationset-controller", cr.Namespace, cr.Name+"-applicationset-controller", cr.Namespace),
+						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-applicationset-controller", cr.Spec.ControlPlaneNamespace, cr.Name+"-applicationset-controller", cr.Spec.ControlPlaneNamespace),
 					},
 					For: ptr.To((monitoringv1.Duration)("5m")),
 					Labels: map[string]string{
@@ -363,11 +363,11 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusRule(cr *argoproj.ClusterArg
 				{
 					Alert: "DexNotReady",
 					Annotations: map[string]string{
-						"message": fmt.Sprintf("dex deployment for Argo CD instance in namespace %s is not running", cr.Namespace),
+						"message": fmt.Sprintf("dex deployment for Argo CD instance in namespace %s is not running", cr.Spec.ControlPlaneNamespace),
 					},
 					Expr: intstr.IntOrString{
 						Type:   intstr.String,
-						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-dex-server", cr.Namespace, cr.Name+"-dex-server", cr.Namespace),
+						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-dex-server", cr.Spec.ControlPlaneNamespace, cr.Name+"-dex-server", cr.Spec.ControlPlaneNamespace),
 					},
 					For: ptr.To((monitoringv1.Duration)("5m")),
 					Labels: map[string]string{
@@ -377,11 +377,11 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusRule(cr *argoproj.ClusterArg
 				{
 					Alert: "NotificationsControllerNotReady",
 					Annotations: map[string]string{
-						"message": fmt.Sprintf("notifications controller deployment for Argo CD instance in namespace %s is not running", cr.Namespace),
+						"message": fmt.Sprintf("notifications controller deployment for Argo CD instance in namespace %s is not running", cr.Spec.ControlPlaneNamespace),
 					},
 					Expr: intstr.IntOrString{
 						Type:   intstr.String,
-						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-notifications-controller", cr.Namespace, cr.Name+"-notifications-controller", cr.Namespace),
+						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-notifications-controller", cr.Spec.ControlPlaneNamespace, cr.Name+"-notifications-controller", cr.Spec.ControlPlaneNamespace),
 					},
 					For: ptr.To((monitoringv1.Duration)("5m")),
 					Labels: map[string]string{
@@ -391,11 +391,11 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusRule(cr *argoproj.ClusterArg
 				{
 					Alert: "RedisNotReady",
 					Annotations: map[string]string{
-						"message": fmt.Sprintf("redis deployment for Argo CD instance in namespace %s is not running", cr.Namespace),
+						"message": fmt.Sprintf("redis deployment for Argo CD instance in namespace %s is not running", cr.Spec.ControlPlaneNamespace),
 					},
 					Expr: intstr.IntOrString{
 						Type:   intstr.String,
-						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-redis", cr.Namespace, cr.Name+"-redis", cr.Namespace),
+						StrVal: fmt.Sprintf("kube_deployment_status_replicas{deployment=\"%s\", namespace=\"%s\"} != kube_deployment_status_replicas_ready{deployment=\"%s\", namespace=\"%s\"} ", cr.Name+"-redis", cr.Spec.ControlPlaneNamespace, cr.Name+"-redis", cr.Spec.ControlPlaneNamespace),
 					},
 					For: ptr.To((monitoringv1.Duration)("5m")),
 					Labels: map[string]string{

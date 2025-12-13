@@ -162,7 +162,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetDeployment(cr *argoproj.
 
 	existing := newDeploymentWithSuffix("applicationset-controller", "controller", cr)
 
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}
@@ -238,7 +238,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetDeployment(cr *argoproj.
 	if scmRootCAConfigMapName := getSCMRootCAConfigMapName(cr); scmRootCAConfigMapName != "" {
 		cm := newConfigMapWithName(scmRootCAConfigMapName, cr)
 
-		cmExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cr.Spec.ApplicationSet.SCMRootCAConfigMap, cm)
+		cmExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cr.Spec.ApplicationSet.SCMRootCAConfigMap, cm)
 		if err != nil {
 			return err
 		}
@@ -445,7 +445,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetServiceAccount(cr *argop
 	setAppSetLabels(&sa.ObjectMeta)
 
 	exists := true
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, sa.Name, sa); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, sa.Name, sa); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return sa, err
 		}
@@ -543,7 +543,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetClusterRoleBinding(cr *a
 		{
 			Kind:      v1.ServiceAccountKind,
 			Name:      sa.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		},
 	}
 	clusterRB.RoleRef = v1.RoleRef{
@@ -620,7 +620,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetSourceNamespacesResource
 		if value, ok := namespace.Labels[common.ArgoCDManagedByLabel]; ok && value != "" {
 			log.Info(fmt.Sprintf("Skipping reconciling resources for namespace %s as it is already managed-by namespace %s.", namespace.Name, value))
 			// remove any source namespace resources
-			if val, ok1 := namespace.Labels[common.ArgoCDApplicationSetManagedByClusterArgoCDLabel]; ok1 && val != cr.Namespace {
+			if val, ok1 := namespace.Labels[common.ArgoCDApplicationSetManagedByClusterArgoCDLabel]; ok1 && val != cr.Spec.ControlPlaneNamespace {
 				delete(r.ManagedApplicationSetSourceNamespaces, namespace.Name)
 				if err := r.cleanupUnmanagedApplicationSetSourceNamespaceResources(cr, namespace.Name); err != nil {
 					log.Error(err, fmt.Sprintf("error cleaning up resources for namespace %s", namespace.Name))
@@ -640,8 +640,8 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetSourceNamespacesResource
 			if namespace.Labels == nil {
 				namespace.Labels = make(map[string]string)
 			}
-			namespace.Labels[common.ArgoCDApplicationSetManagedByClusterArgoCDLabel] = cr.Namespace
-			explanation := fmt.Sprintf("adding label '%s=%s'", common.ArgoCDApplicationSetManagedByClusterArgoCDLabel, cr.Namespace)
+			namespace.Labels[common.ArgoCDApplicationSetManagedByClusterArgoCDLabel] = cr.Spec.ControlPlaneNamespace
+			explanation := fmt.Sprintf("adding label '%s=%s'", common.ArgoCDApplicationSetManagedByClusterArgoCDLabel, cr.Spec.ControlPlaneNamespace)
 			argoutil.LogResourceUpdate(log, namespace, explanation)
 			if err := r.Update(context.TODO(), namespace); err != nil {
 				log.Error(err, fmt.Sprintf("failed to add label from namespace [%s]", namespace.Name))
@@ -678,7 +678,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetSourceNamespacesResource
 				{
 					Kind:      v1.ServiceAccountKind,
 					Name:      getServiceAccountName(cr.Name, "applicationset-controller"),
-					Namespace: cr.Namespace,
+					Namespace: cr.Spec.ControlPlaneNamespace,
 				},
 			},
 		}
@@ -708,7 +708,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetRole(cr *argoproj.Cluste
 	setAppSetLabels(&role.ObjectMeta)
 
 	exists := true
-	err := r.Get(context.TODO(), types.NamespacedName{Name: role.Name, Namespace: cr.Namespace}, role)
+	err := r.Get(context.TODO(), types.NamespacedName{Name: role.Name, Namespace: cr.Spec.ControlPlaneNamespace}, role)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return role, err
@@ -751,7 +751,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetRoleBinding(cr *argoproj
 
 	// fetch existing rolebinding by name
 	roleBindingExists := true
-	if err := r.Get(context.TODO(), types.NamespacedName{Name: roleBinding.Name, Namespace: cr.Namespace}, roleBinding); err != nil {
+	if err := r.Get(context.TODO(), types.NamespacedName{Name: roleBinding.Name, Namespace: cr.Spec.ControlPlaneNamespace}, roleBinding); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get the rolebinding associated with %s : %s", name, err)
 		}
@@ -824,7 +824,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetService(cr *argoproj.Clu
 	log.Info("reconciling applicationset service")
 
 	svc := newServiceWithSuffix(common.ApplicationSetServiceNameSuffix, common.ApplicationSetServiceNameSuffix, cr)
-	serviceExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	serviceExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -832,7 +832,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetService(cr *argoproj.Clu
 	if cr.Spec.ApplicationSet == nil || !cr.Spec.ApplicationSet.IsEnabled() {
 
 		if serviceExists {
-			err := argoutil.FetchObject(r.Client, cr.Namespace, svc.Name, svc)
+			err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 			if err != nil {
 				return err
 			}
@@ -875,7 +875,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetService(cr *argoproj.Clu
 
 // Returns the name of the role/rolebinding for the source namespaces for applicationset-controller in the format of "argocdName-argocdNamespace-applicationset"
 func getResourceNameForApplicationSetSourceNamespaces(cr *argoproj.ClusterArgoCD) string {
-	return fmt.Sprintf("%s-%s-applicationset", cr.Name, cr.Namespace)
+	return fmt.Sprintf("%s-%s-applicationset", cr.Name, cr.Spec.ControlPlaneNamespace)
 }
 
 // removeUnmanagedApplicationSetSourceNamespaceResources cleansup resources from ApplicationSetSourceNamespaces if namespace is not managed by argocd instance.
@@ -976,7 +976,7 @@ func (r *ReconcileClusterArgoCD) setManagedApplicationSetSourceNamespaces(cr *ar
 	}
 	namespaces := &corev1.NamespaceList{}
 	listOption := client.MatchingLabels{
-		common.ArgoCDApplicationSetManagedByClusterArgoCDLabel: cr.Namespace,
+		common.ArgoCDApplicationSetManagedByClusterArgoCDLabel: cr.Spec.ControlPlaneNamespace,
 	}
 
 	// get the list of namespaces managed with "argocd.argoproj.io/applicationset-managed-by-cluster-argocd" label

@@ -114,14 +114,14 @@ func newCertificateSecret(suffix string, caCert *x509.Certificate, caKey *rsa.Pr
 		SecretName: secret.Name,
 		CommonName: secret.Name,
 		Subject: &certmanagerv1.X509Subject{
-			Organizations: []string{cr.Namespace},
+			Organizations: []string{cr.Spec.ControlPlaneNamespace},
 		},
 	}
 
 	dnsNames := []string{
 		cr.Name,
 		nameWithSuffix("grpc", cr),
-		fmt.Sprintf("%s.%s.svc.cluster.local", cr.Name, cr.Namespace),
+		fmt.Sprintf("%s.%s.svc.cluster.local", cr.Name, cr.Spec.ControlPlaneNamespace),
 	}
 
 	//lint:ignore SA1019 known to be deprecated
@@ -150,7 +150,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoSecret(cr *argoproj.ClusterArgoCD)
 	clusterSecret := argoutil.NewSecretWithSuffix(cr, "cluster")
 	secret := argoutil.NewSecretWithName(cr, common.ArgoCDSecretName)
 
-	clusterSecretFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, clusterSecret.Name, clusterSecret)
+	clusterSecretFound, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, clusterSecret.Name, clusterSecret)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoSecret(cr *argoproj.ClusterArgoCD)
 	}
 
 	tlsSecret := argoutil.NewSecretWithSuffix(cr, "tls")
-	tlsSecretExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, tlsSecret.Name, tlsSecret)
+	tlsSecretExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, tlsSecret.Name, tlsSecret)
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoSecret(cr *argoproj.ClusterArgoCD)
 		return nil
 	}
 
-	secretFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, secret.Name, secret)
+	secretFound, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, secret.Name, secret)
 	if err != nil {
 		return err
 	}
@@ -214,7 +214,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoSecret(cr *argoproj.ClusterArgoCD)
 // reconcileClusterMainSecret will ensure that the main Secret is present for the Argo CD cluster.
 func (r *ReconcileClusterArgoCD) reconcileClusterMainSecret(cr *argoproj.ClusterArgoCD) error {
 	secret := argoutil.NewSecretWithSuffix(cr, "cluster")
-	secretExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, secret.Name, secret)
+	secretExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, secret.Name, secret)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (r *ReconcileClusterArgoCD) reconcileClusterMainSecret(cr *argoproj.Cluster
 // reconcileClusterTLSSecret ensures the TLS Secret is created for the ArgoCD cluster.
 func (r *ReconcileClusterArgoCD) reconcileClusterTLSSecret(cr *argoproj.ClusterArgoCD) error {
 	secret := argoutil.NewTLSSecret(cr, "tls")
-	secretExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, secret.Name, secret)
+	secretExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, secret.Name, secret)
 	if err != nil {
 		return err
 	}
@@ -281,7 +281,7 @@ func (r *ReconcileClusterArgoCD) reconcileClusterTLSSecret(cr *argoproj.ClusterA
 // reconcileClusterCASecret ensures the CA Secret is created for the ArgoCD cluster.
 func (r *ReconcileClusterArgoCD) reconcileClusterCASecret(cr *argoproj.ClusterArgoCD) error {
 	secret := argoutil.NewSecretWithSuffix(cr, "ca")
-	secretExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, secret.Name, secret)
+	secretExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, secret.Name, secret)
 	if err != nil {
 		return err
 	}
@@ -428,7 +428,7 @@ func generateSortedManagedNamespaceListForArgoCDCR(cr *argoproj.ClusterArgoCD, r
 	// Fetch namespaces with 'managed-by' label
 	namespaceList := corev1.NamespaceList{}
 	listOption := client.MatchingLabels{
-		common.ArgoCDManagedByLabel: cr.Namespace,
+		common.ArgoCDManagedByLabel: cr.Spec.ControlPlaneNamespace,
 	}
 	if err := rClient.List(context.TODO(), &namespaceList, listOption); err != nil {
 		return nil, err
@@ -454,9 +454,9 @@ func generateSortedManagedNamespaceListForArgoCDCR(cr *argoproj.ClusterArgoCD, r
 			return nil, err
 		}
 
-		// Collect namespaces where .spec.managedBy matches cr.Namespace
+		// Collect namespaces where .spec.managedBy matches cr.Spec.ControlPlaneNamespace
 		for _, nsMgmt := range nsMgmtList.Items {
-			if nsMgmt.Spec.ManagedBy == cr.Namespace {
+			if nsMgmt.Spec.ManagedBy == cr.Spec.ControlPlaneNamespace {
 				if glob.MatchStringInList(allowedNamespacePatterns, nsMgmt.Namespace, glob.GLOB) {
 					uniqueNamespaces[nsMgmt.Namespace] = struct{}{}
 				}
@@ -464,9 +464,9 @@ func generateSortedManagedNamespaceListForArgoCDCR(cr *argoproj.ClusterArgoCD, r
 		}
 	}
 
-	// Add cr.Namespace if not already present
-	if _, exists := uniqueNamespaces[cr.Namespace]; !exists {
-		uniqueNamespaces[cr.Namespace] = struct{}{}
+	// Add cr.Spec.ControlPlaneNamespace if not already present
+	if _, exists := uniqueNamespaces[cr.Spec.ControlPlaneNamespace]; !exists {
+		uniqueNamespaces[cr.Spec.ControlPlaneNamespace] = struct{}{}
 	}
 
 	// Convert map keys to a slice
@@ -564,7 +564,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisTLSSecret(cr *argoproj.ClusterArg
 
 	log.Info("reconciling redis-server TLS secret")
 
-	tlsSecretName := types.NamespacedName{Namespace: cr.Namespace, Name: common.ArgoCDRedisServerTLSSecretName}
+	tlsSecretName := types.NamespacedName{Namespace: cr.Spec.ControlPlaneNamespace, Name: common.ArgoCDRedisServerTLSSecretName}
 	err := r.Get(context.TODO(), tlsSecretName, &tlsSecretObj)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -677,7 +677,7 @@ func (r *ReconcileClusterArgoCD) getClusterSecrets(cr *argoproj.ClusterArgoCD) (
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			common.ArgoCDSecretTypeLabel: "cluster",
 		}),
-		Namespace: cr.Namespace,
+		Namespace: cr.Spec.ControlPlaneNamespace,
 	}
 
 	if err := r.List(context.TODO(), clusterSecrets, opts); err != nil {
@@ -691,7 +691,7 @@ func (r *ReconcileClusterArgoCD) getClusterSecrets(cr *argoproj.ClusterArgoCD) (
 func (r *ReconcileClusterArgoCD) reconcileRedisInitialPasswordSecret(cr *argoproj.ClusterArgoCD) error {
 	secret := argoutil.NewSecretWithSuffix(cr, "redis-initial-password")
 
-	secretExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, secret.Name, secret)
+	secretExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, secret.Name, secret)
 	if err != nil {
 		return err
 	}

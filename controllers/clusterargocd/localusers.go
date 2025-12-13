@@ -68,7 +68,7 @@ const (
 func (r *ReconcileClusterArgoCD) reconcileLocalUsers(cr *argoproj.ClusterArgoCD) error {
 	// Retrieve the signing key from the argocd-secret
 	argoCDSecret := corev1.Secret{}
-	found, err := argoutil.IsObjectFound(r.Client, cr.Namespace, common.ArgoCDSecretName, &argoCDSecret)
+	found, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, common.ArgoCDSecretName, &argoCDSecret)
 	if err != nil {
 		return fmt.Errorf("error retrieving secret %s: %w", common.ArgoCDSecretName, err)
 	}
@@ -113,7 +113,7 @@ func (r *ReconcileClusterArgoCD) reconcileUser(cr *argoproj.ClusterArgoCD, user 
 	userSecret := corev1.Secret{}
 	secretName := userSecretName(user)
 	secretExists := true
-	err := r.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: cr.Namespace}, &userSecret)
+	err := r.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: cr.Spec.ControlPlaneNamespace}, &userSecret)
 	if apierrors.IsNotFound(err) {
 		secretExists = false
 	} else if err != nil {
@@ -125,7 +125,7 @@ func (r *ReconcileClusterArgoCD) reconcileUser(cr *argoproj.ClusterArgoCD, user 
 	if secretExists && user.ApiKey != nil && !*user.ApiKey {
 		var err error
 		r.LocalUsers.UserTokensLock.protect(func() {
-			key := tokenRenewalTimerKey(cr.Namespace, user.Name)
+			key := tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name)
 			existingTimer, ok := r.LocalUsers.TokenRenewalTimers[key]
 			if ok {
 				existingTimer.stopped = true
@@ -184,7 +184,7 @@ func (r *ReconcileClusterArgoCD) reconcileUser(cr *argoproj.ClusterArgoCD, user 
 			// user, we need to add a timer for the remaining duration. This would
 			// happen when the operator is restared.
 			r.LocalUsers.UserTokensLock.protect(func() {
-				key := tokenRenewalTimerKey(cr.Namespace, user.Name)
+				key := tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name)
 				if _, ok := r.LocalUsers.TokenRenewalTimers[key]; !ok {
 					renewalTimer := &TokenRenewalTimer{}
 					renewalTime := time.Unix(expAt, 0)
@@ -215,7 +215,7 @@ func (r *ReconcileClusterArgoCD) reconcileUser(cr *argoproj.ClusterArgoCD, user 
 	if autoRenewChanged && autoRenew == "false" {
 		var err error
 		r.LocalUsers.UserTokensLock.protect(func() {
-			key := tokenRenewalTimerKey(cr.Namespace, user.Name)
+			key := tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name)
 			existingTimer, ok := r.LocalUsers.TokenRenewalTimers[key]
 			if ok {
 				existingTimer.stopped = true
@@ -224,7 +224,7 @@ func (r *ReconcileClusterArgoCD) reconcileUser(cr *argoproj.ClusterArgoCD, user 
 			}
 			if !tokenLifetimeChanged {
 				userSecret.Data[localUserAutoRenew] = []byte(autoRenew)
-				argoutil.LogResourceUpdate(log, &userSecret, "autoRenew set to false for user", tokenRenewalTimerKey(cr.Namespace, user.Name))
+				argoutil.LogResourceUpdate(log, &userSecret, "autoRenew set to false for user", tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name))
 				err = r.Update(context.TODO(), &userSecret)
 			}
 		})
@@ -254,12 +254,12 @@ func (r *ReconcileClusterArgoCD) reconcileUser(cr *argoproj.ClusterArgoCD, user 
 					}
 					err := r.issueToken(*cr, user, tokenLifetime, tokenDuration, "token automatically re-issued after expiration", signingKey)
 					if err != nil {
-						log.Error(err, fmt.Sprintf("when trying to re-issue token for user %s/%s", cr.Namespace, user.Name))
+						log.Error(err, fmt.Sprintf("when trying to re-issue token for user %s/%s", cr.Spec.ControlPlaneNamespace, user.Name))
 					}
 				})
 			})
 			renewalTimer.timer = timer
-			key := tokenRenewalTimerKey(cr.Namespace, user.Name)
+			key := tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name)
 			r.LocalUsers.TokenRenewalTimers[key] = renewalTimer
 			userSecret.Data[localUserAutoRenew] = []byte(autoRenew)
 			msg := fmt.Sprintf("Scheduled token renewal for user '%s' to %s", key, renewalTime.Format(time.RFC1123))
@@ -274,13 +274,13 @@ func (r *ReconcileClusterArgoCD) reconcileUser(cr *argoproj.ClusterArgoCD, user 
 
 	var explanation string
 	if tokenLifetimeChanged {
-		explanation = fmt.Sprintf("token lifetime changed from %s to %s for user %s", string(userSecret.Data[localUserTokenLifetime]), tokenLifetime, tokenRenewalTimerKey(cr.Namespace, user.Name))
+		explanation = fmt.Sprintf("token lifetime changed from %s to %s for user %s", string(userSecret.Data[localUserTokenLifetime]), tokenLifetime, tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name))
 	}
 	if autoRenewChanged {
 		if tokenLifetimeChanged {
 			explanation += ", "
 		}
-		explanation += fmt.Sprintf("auto-renew changed from %s to %s for user %s", string(userSecret.Data[localUserAutoRenew]), autoRenew, tokenRenewalTimerKey(cr.Namespace, user.Name))
+		explanation += fmt.Sprintf("auto-renew changed from %s to %s for user %s", string(userSecret.Data[localUserAutoRenew]), autoRenew, tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name))
 	}
 
 	err = nil
@@ -296,7 +296,7 @@ func (r *ReconcileClusterArgoCD) issueToken(cr argoproj.ClusterArgoCD, user argo
 	userSecret := corev1.Secret{}
 	secretName := userSecretName(user)
 	secretExists := true
-	err := r.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: cr.Namespace}, &userSecret)
+	err := r.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: cr.Spec.ControlPlaneNamespace}, &userSecret)
 	if apierrors.IsNotFound(err) {
 		secretExists = false
 		userSecret = *argoutil.NewSecretWithName(&cr, secretName)
@@ -376,7 +376,7 @@ func (r *ReconcileClusterArgoCD) issueToken(cr argoproj.ClusterArgoCD, user argo
 	}
 
 	argoCDSecret := corev1.Secret{}
-	err = r.Get(context.TODO(), types.NamespacedName{Name: common.ArgoCDSecretName, Namespace: cr.Namespace}, &argoCDSecret)
+	err = r.Get(context.TODO(), types.NamespacedName{Name: common.ArgoCDSecretName, Namespace: cr.Spec.ControlPlaneNamespace}, &argoCDSecret)
 	if err != nil {
 		return err
 	}
@@ -390,7 +390,7 @@ func (r *ReconcileClusterArgoCD) issueToken(cr argoproj.ClusterArgoCD, user argo
 
 	// Find the timer for the user and update it
 	if tokenDuration > 0 && autoRenew == "true" {
-		key := tokenRenewalTimerKey(cr.Namespace, user.Name)
+		key := tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name)
 		existingTimer, ok := r.LocalUsers.TokenRenewalTimers[key]
 		if ok {
 			existingTimer.stopped = true
@@ -410,7 +410,7 @@ func (r *ReconcileClusterArgoCD) issueToken(cr argoproj.ClusterArgoCD, user argo
 			})
 		})
 		renewalTimer.timer = timer
-		r.LocalUsers.TokenRenewalTimers[tokenRenewalTimerKey(cr.Namespace, user.Name)] = renewalTimer
+		r.LocalUsers.TokenRenewalTimers[tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, user.Name)] = renewalTimer
 		msg := fmt.Sprintf("Scheduled token renewal for user '%s' to %s", key, time.Now().Add(tokenDuration).Format(time.RFC1123))
 		log.Info(msg)
 
@@ -426,7 +426,7 @@ func (r *ReconcileClusterArgoCD) cleanupLocalUsers(cr *argoproj.ClusterArgoCD) e
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			common.ArgoCDKeyComponent: localUserSecretComponent,
 		}),
-		Namespace: cr.Namespace,
+		Namespace: cr.Spec.ControlPlaneNamespace,
 	}
 	if err := r.List(context.TODO(), &secrets, &options); err != nil {
 		return err
@@ -446,7 +446,7 @@ func (r *ReconcileClusterArgoCD) cleanupLocalUsers(cr *argoproj.ClusterArgoCD) e
 		if !found {
 			var err error
 			r.LocalUsers.UserTokensLock.protect(func() {
-				key := tokenRenewalTimerKey(cr.Namespace, userName)
+				key := tokenRenewalTimerKey(cr.Spec.ControlPlaneNamespace, userName)
 				existingTimer, ok := r.LocalUsers.TokenRenewalTimers[key]
 				if ok {
 					existingTimer.stopped = true
@@ -476,7 +476,7 @@ func (r *ReconcileClusterArgoCD) cleanupUser(cr *argoproj.ClusterArgoCD, userNam
 	value := cr.Spec.ExtraConfig["accounts."+userName]
 	if !strings.Contains(value, localUserApiKey) {
 		argoCDSecret := corev1.Secret{}
-		if err := r.Get(context.TODO(), types.NamespacedName{Name: common.ArgoCDSecretName, Namespace: cr.Namespace}, &argoCDSecret); err != nil {
+		if err := r.Get(context.TODO(), types.NamespacedName{Name: common.ArgoCDSecretName, Namespace: cr.Spec.ControlPlaneNamespace}, &argoCDSecret); err != nil {
 			return err
 		}
 

@@ -162,7 +162,7 @@ func TestReconcileArgoCD_reconcileRedisWithRemoteEn(t *testing.T) {
 
 	s := &corev1.Service{}
 
-	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, s),
+	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, s),
 		"services \"argocd-redis\" not found")
 }
 
@@ -183,7 +183,7 @@ func TestReconcileArgoCD_reconcileRepoServerWithRemoteEnabled(t *testing.T) {
 
 	s := &corev1.Service{}
 
-	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Namespace}, s),
+	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Spec.ControlPlaneNamespace}, s),
 		"services \"argocd-repo-server\" not found")
 }
 

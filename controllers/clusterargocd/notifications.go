@@ -107,7 +107,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsConfigurationCR(cr *argop
 	defaultNotificationsConfigurationCR := &v1alpha1.NotificationsConfiguration{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      DefaultNotificationsConfigurationInstanceName,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		},
 		Spec: v1alpha1.NotificationsConfigurationSpec{
 			Context:   getDefaultNotificationsContext(),
@@ -116,7 +116,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsConfigurationCR(cr *argop
 		},
 	}
 
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, DefaultNotificationsConfigurationInstanceName,
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, DefaultNotificationsConfigurationInstanceName,
 		defaultNotificationsConfigurationCR); err != nil {
 
 		if !apierrors.IsNotFound(err) {
@@ -153,12 +153,12 @@ func (r *ReconcileClusterArgoCD) deleteNotificationsResources(cr *argoproj.Clust
 	sa := &corev1.ServiceAccount{}
 	role := &rbacv1.Role{}
 
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, fmt.Sprintf("%s-%s", cr.Name, common.ArgoCDNotificationsControllerComponent), sa); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, fmt.Sprintf("%s-%s", cr.Name, common.ArgoCDNotificationsControllerComponent), sa); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
 	}
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, fmt.Sprintf("%s-%s", cr.Name, common.ArgoCDNotificationsControllerComponent), role); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, fmt.Sprintf("%s-%s", cr.Name, common.ArgoCDNotificationsControllerComponent), role); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -214,7 +214,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsServiceAccount(cr *argopr
 
 	sa := newServiceAccountWithName(common.ArgoCDNotificationsControllerComponent, cr)
 
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, sa.Name, sa); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, sa.Name, sa); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, fmt.Errorf("failed to get the serviceAccount associated with %s : %s", sa.Name, err)
 		}
@@ -251,7 +251,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsRole(cr *argoproj.Cluster
 	desiredRole := newRole(common.ArgoCDNotificationsControllerComponent, policyRules, cr)
 
 	existingRole := &rbacv1.Role{}
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, desiredRole.Name, existingRole); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, desiredRole.Name, existingRole); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, fmt.Errorf("failed to get the role associated with %s : %s", desiredRole.Name, err)
 		}
@@ -315,7 +315,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsRoleBinding(cr *argoproj.
 
 	// fetch existing rolebinding by name
 	existingRoleBinding := &rbacv1.RoleBinding{}
-	if err := r.Get(context.TODO(), types.NamespacedName{Name: desiredRoleBinding.Name, Namespace: cr.Namespace}, existingRoleBinding); err != nil {
+	if err := r.Get(context.TODO(), types.NamespacedName{Name: desiredRoleBinding.Name, Namespace: cr.Spec.ControlPlaneNamespace}, existingRoleBinding); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get the rolebinding associated with %s : %s", desiredRoleBinding.Name, err)
 		}
@@ -481,7 +481,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsDeployment(cr *argoproj.C
 
 	desiredDeployment := newDeploymentWithSuffix("notifications-controller", "controller", cr)
 
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, desiredDeployment.Name, desiredDeployment)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, desiredDeployment.Name, desiredDeployment)
 	if err != nil {
 		return err
 	}
@@ -570,7 +570,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsMetricsService(cr *argopr
 	var suffix = "notifications-controller-metrics"
 
 	svc := newServiceWithSuffix(suffix, component, cr)
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -608,7 +608,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsServiceMonitor(cr *argopr
 
 	name := fmt.Sprintf("%s-%s", cr.Name, "notifications-controller-metrics")
 	serviceMonitor := newServiceMonitorWithName(name, cr)
-	smExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, serviceMonitor.Name, serviceMonitor)
+	smExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, serviceMonitor.Name, serviceMonitor)
 	if err != nil {
 		return err
 	}
@@ -643,7 +643,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsSecret(cr *argoproj.Clust
 
 	secretExists := true
 	existingSecret := &corev1.Secret{}
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, desiredSecret.Name, existingSecret); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, desiredSecret.Name, existingSecret); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get the secret associated with %s : %s", desiredSecret.Name, err)
 		}
@@ -719,7 +719,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsSourceNamespacesResources
 		if value, ok := namespace.Labels[common.ArgoCDManagedByLabel]; ok && value != "" {
 			log.Info(fmt.Sprintf("Skipping reconciling resources for namespace %s as it is already managed-by namespace %s.", namespace.Name, value))
 			// remove any source namespace resources
-			if val, ok1 := namespace.Labels[common.ArgoCDNotificationsManagedByClusterArgoCDLabel]; ok1 && val != cr.Namespace {
+			if val, ok1 := namespace.Labels[common.ArgoCDNotificationsManagedByClusterArgoCDLabel]; ok1 && val != cr.Spec.ControlPlaneNamespace {
 				delete(r.ManagedNotificationsSourceNamespaces, namespace.Name)
 				if err := r.cleanupUnmanagedNotificationsSourceNamespaceResources(cr, namespace.Name); err != nil {
 					log.Error(err, fmt.Sprintf("error cleaning up resources for namespace %s", namespace.Name))
@@ -739,8 +739,8 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsSourceNamespacesResources
 			if namespace.Labels == nil {
 				namespace.Labels = make(map[string]string)
 			}
-			namespace.Labels[common.ArgoCDNotificationsManagedByClusterArgoCDLabel] = cr.Namespace
-			explanation := fmt.Sprintf("adding label '%s=%s'", common.ArgoCDNotificationsManagedByClusterArgoCDLabel, cr.Namespace)
+			namespace.Labels[common.ArgoCDNotificationsManagedByClusterArgoCDLabel] = cr.Spec.ControlPlaneNamespace
+			explanation := fmt.Sprintf("adding label '%s=%s'", common.ArgoCDNotificationsManagedByClusterArgoCDLabel, cr.Spec.ControlPlaneNamespace)
 			argoutil.LogResourceUpdate(log, namespace, explanation)
 			if err := r.Update(context.TODO(), namespace); err != nil {
 				log.Error(err, fmt.Sprintf("failed to add label from namespace [%s]", namespace.Name))
@@ -777,7 +777,7 @@ func (r *ReconcileClusterArgoCD) reconcileNotificationsSourceNamespacesResources
 				{
 					Kind:      rbacv1.ServiceAccountKind,
 					Name:      getServiceAccountName(cr.Name, "notifications-controller"),
-					Namespace: cr.Namespace,
+					Namespace: cr.Spec.ControlPlaneNamespace,
 				},
 			},
 		}
@@ -883,7 +883,7 @@ func getNotificationsResources(cr *argoproj.ClusterArgoCD) corev1.ResourceRequir
 
 // Returns the name of the role/rolebinding for the source namespaces for notifications-controller in the format of "argocdName-argocdNamespace-notifications"
 func getResourceNameForNotificationsSourceNamespaces(cr *argoproj.ClusterArgoCD) string {
-	return fmt.Sprintf("%s-%s-notifications", cr.Name, cr.Namespace)
+	return fmt.Sprintf("%s-%s-notifications", cr.Name, cr.Spec.ControlPlaneNamespace)
 }
 
 // setManagedNotificationSourceNamespaces populates ManagedNotificationsSourceNamespaces var with namespaces
@@ -894,7 +894,7 @@ func (r *ReconcileClusterArgoCD) setManagedNotificationsSourceNamespaces(cr *arg
 	}
 	namespaces := &corev1.NamespaceList{}
 	listOption := client.MatchingLabels{
-		common.ArgoCDNotificationsManagedByClusterArgoCDLabel: cr.Namespace,
+		common.ArgoCDNotificationsManagedByClusterArgoCDLabel: cr.Spec.ControlPlaneNamespace,
 	}
 
 	// get the list of namespaces managed with "argocd.argoproj.io/notifications-managed-by-cluster-argocd" label

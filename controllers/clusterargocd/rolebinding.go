@@ -49,7 +49,7 @@ func newRoleBinding(cr *argoproj.ClusterArgoCD) *v1.RoleBinding {
 			Name:        cr.Name,
 			Labels:      argoutil.LabelsForCluster(cr),
 			Annotations: argoutil.AnnotationsForCluster(cr),
-			Namespace:   cr.Namespace,
+			Namespace:   cr.Spec.ControlPlaneNamespace,
 		},
 	}
 }
@@ -134,7 +134,7 @@ func (r *ReconcileClusterArgoCD) reconcileRoleBinding(name string, rules []v1.Po
 		// only skip creation of dex and redisHa rolebindings for namespaces that no argocd instance is deployed in
 		if len(list.Items) < 1 {
 			// namespace doesn't contain argocd instance, so skipe all the ArgoCD internal roles
-			if cr.Namespace != namespace.Name && (name != common.ArgoCDApplicationControllerComponent && name != common.ArgoCDServerComponent) {
+			if cr.Spec.ControlPlaneNamespace != namespace.Name && (name != common.ArgoCDApplicationControllerComponent && name != common.ArgoCDServerComponent) {
 				continue
 			}
 		}
@@ -212,7 +212,7 @@ func (r *ReconcileClusterArgoCD) reconcileRoleBinding(name string, rules []v1.Po
 		}
 
 		// Only set ownerReferences for role bindings in same namespaces as Argo CD CR
-		if cr.Namespace == roleBinding.Namespace {
+		if cr.Spec.ControlPlaneNamespace == roleBinding.Namespace {
 			if err = controllerutil.SetControllerReference(cr, roleBinding, r.Scheme); err != nil {
 				return fmt.Errorf("failed to set ArgoCD CR \"%s\" as owner for roleBinding \"%s\": %s", cr.Name, roleBinding.Name, err)
 			}
@@ -280,18 +280,18 @@ func (r *ReconcileClusterArgoCD) reconcileRoleBinding(name string, rules []v1.Po
 				{
 					Kind:      v1.ServiceAccountKind,
 					Name:      getServiceAccountName(cr.Name, common.ArgoCDServerComponent),
-					Namespace: cr.Namespace,
+					Namespace: cr.Spec.ControlPlaneNamespace,
 				},
 				{
 					Kind:      v1.ServiceAccountKind,
 					Name:      getServiceAccountName(cr.Name, common.ArgoCDApplicationControllerComponent),
-					Namespace: cr.Namespace,
+					Namespace: cr.Spec.ControlPlaneNamespace,
 				},
 			}
 
 			if roleBindingExists {
 				// reconcile role bindings for namespaces already containing managed-by-cluster-argocd label only
-				if n, ok := namespace.Labels[common.ArgoCDManagedByClusterArgoCDLabel]; !ok || n != cr.Namespace {
+				if n, ok := namespace.Labels[common.ArgoCDManagedByClusterArgoCDLabel]; !ok || n != cr.Spec.ControlPlaneNamespace {
 					continue
 				}
 				// if the RoleRef changes, delete the existing role binding and create a new one
@@ -399,7 +399,7 @@ func (r *ReconcileClusterArgoCD) reconcileClusterRoleBinding(name string, role *
 		{
 			Kind:      v1.ServiceAccountKind,
 			Name:      generateResourceName(name, cr),
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		},
 	}
 	roleBinding.RoleRef = v1.RoleRef{
@@ -408,7 +408,7 @@ func (r *ReconcileClusterArgoCD) reconcileClusterRoleBinding(name string, role *
 		Name:     GenerateUniqueResourceName(name, cr),
 	}
 
-	if cr.Namespace == roleBinding.Namespace {
+	if cr.Spec.ControlPlaneNamespace == roleBinding.Namespace {
 		if err = controllerutil.SetControllerReference(cr, roleBinding, r.Scheme); err != nil {
 			return fmt.Errorf("failed to set ArgoCD CR \"%s\" as owner for roleBinding \"%s\": %s", cr.Name, roleBinding.Name, err)
 		}

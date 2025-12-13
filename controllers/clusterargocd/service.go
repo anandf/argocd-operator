@@ -44,7 +44,7 @@ func newService(cr *argoproj.ClusterArgoCD) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -73,7 +73,7 @@ func newServiceWithSuffix(suffix string, component string, cr *argoproj.ClusterA
 // reconcileGrafanaService will ensure that the Service for Grafana is present.
 func (r *ReconcileClusterArgoCD) reconcileGrafanaService(cr *argoproj.ClusterArgoCD) error {
 	svc := newServiceWithSuffix("grafana", "grafana", cr)
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (r *ReconcileClusterArgoCD) reconcileGrafanaService(cr *argoproj.ClusterArg
 // reconcileMetricsService will ensure that the Service for the Argo CD application controller metrics is present.
 func (r *ReconcileClusterArgoCD) reconcileMetricsService(cr *argoproj.ClusterArgoCD) error {
 	svc := newServiceWithSuffix("metrics", "metrics", cr)
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (r *ReconcileClusterArgoCD) reconcileMetricsService(cr *argoproj.ClusterArg
 func (r *ReconcileClusterArgoCD) reconcileRedisHAAnnounceServices(cr *argoproj.ClusterArgoCD) error {
 	for i := int32(0); i < common.ArgoCDDefaultRedisHAReplicas; i++ {
 		svc := newServiceWithSuffix(fmt.Sprintf("redis-ha-announce-%d", i), "redis", cr)
-		svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+		svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAAnnounceServices(cr *argoproj.C
 // reconcileRedisHAMasterService will ensure that the "master" Service is present for Redis when running in HA mode.
 func (r *ReconcileClusterArgoCD) reconcileRedisHAMasterService(cr *argoproj.ClusterArgoCD) error {
 	svc := newServiceWithSuffix("redis-ha", "redis", cr)
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAMasterService(cr *argoproj.Clus
 // reconcileRedisHAProxyService will ensure that the HA Proxy Service is present for Redis when running in HA mode.
 func (r *ReconcileClusterArgoCD) reconcileRedisHAProxyService(cr *argoproj.ClusterArgoCD) error {
 	svc := newServiceWithSuffix("redis-ha-haproxy", "redis", cr)
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -323,7 +323,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAServices(cr *argoproj.ClusterAr
 func (r *ReconcileClusterArgoCD) reconcileRedisService(cr *argoproj.ClusterArgoCD) error {
 	svc := newServiceWithSuffix("redis", "redis", cr)
 
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -439,7 +439,7 @@ func ensureAutoTLSAnnotation(k8sClient client.Client, svc *corev1.Service, secre
 // reconcileServerMetricsService will ensure that the Service for the Argo CD server metrics is present.
 func (r *ReconcileClusterArgoCD) reconcileServerMetricsService(cr *argoproj.ClusterArgoCD) error {
 	svc := newServiceWithSuffix("server-metrics", "server", cr)
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}
@@ -500,7 +500,7 @@ func (r *ReconcileClusterArgoCD) reconcileServerService(cr *argoproj.ClusterArgo
 	}
 
 	existingSVC := &corev1.Service{}
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, existingSVC)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, existingSVC)
 	if err != nil {
 		return err
 	}

@@ -40,7 +40,7 @@ func UseDex(cr *argoproj.ClusterArgoCD) bool {
 // getDexOAuthClientSecret will return the OAuth client secret for the given ArgoCD.
 func (r *ReconcileClusterArgoCD) getDexOAuthClientSecret(cr *argoproj.ClusterArgoCD) (*string, error) {
 	sa := newServiceAccountWithName(common.ArgoCDDefaultDexServiceAccountName, cr)
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, sa.Name, sa); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, sa.Name, sa); err != nil {
 		return nil, err
 	}
 
@@ -65,7 +65,7 @@ func (r *ReconcileClusterArgoCD) getDexOAuthClientSecret(cr *argoproj.ClusterArg
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "argocd-dex-server-token-",
-				Namespace:    cr.Namespace,
+				Namespace:    cr.Spec.ControlPlaneNamespace,
 				Annotations: map[string]string{
 					corev1.ServiceAccountNameKey: sa.Name,
 				},
@@ -84,7 +84,7 @@ func (r *ReconcileClusterArgoCD) getDexOAuthClientSecret(cr *argoproj.ClusterArg
 		}
 		tokenSecret = &corev1.ObjectReference{
 			Name:      secret.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 		}
 		sa.Secrets = append(sa.Secrets, *tokenSecret)
 		argoutil.LogResourceUpdate(log, sa, "adding ServiceAccount token for OAuth client secret")
@@ -96,7 +96,7 @@ func (r *ReconcileClusterArgoCD) getDexOAuthClientSecret(cr *argoproj.ClusterArg
 
 	// Fetch the secret to obtain the token
 	secret := argoutil.NewSecretWithName(cr, tokenSecret.Name)
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, secret.Name, secret); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, secret.Name, secret); err != nil {
 		return nil, err
 	}
 
@@ -214,7 +214,7 @@ func (r *ReconcileClusterArgoCD) reconcileDexServiceAccount(cr *argoproj.Cluster
 
 	log.Info("oauth enabled, configuring dex service account")
 	sa := newServiceAccountWithName(common.ArgoCDDefaultDexServiceAccountName, cr)
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, sa.Name, sa); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, sa.Name, sa); err != nil {
 		return err
 	}
 
@@ -346,7 +346,7 @@ func (r *ReconcileClusterArgoCD) reconcileDexDeployment(cr *argoproj.ClusterArgo
 	deploy.Spec.Template.Spec.Volumes = dexVolumes
 
 	existing := newDeploymentWithSuffix("dex-server", "dex-server", cr)
-	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existing.Name, existing)
+	deplExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existing.Name, existing)
 	if err != nil {
 		return err
 	}
@@ -497,7 +497,7 @@ func (r *ReconcileClusterArgoCD) reconcileDexDeployment(cr *argoproj.ClusterArgo
 func (r *ReconcileClusterArgoCD) reconcileDexService(cr *argoproj.ClusterArgoCD) error {
 	svc := newServiceWithSuffix("dex-server", "dex-server", cr)
 
-	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, svc.Name, svc)
+	svcExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, svc.Name, svc)
 	if err != nil {
 		return err
 	}

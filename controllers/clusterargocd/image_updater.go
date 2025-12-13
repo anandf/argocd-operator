@@ -78,13 +78,13 @@ func (r *ReconcileClusterArgoCD) reconcileImageUpdaterControllerEnabled(cr *argo
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ArgocdImageUpdaterConfigCM,
-				Namespace: cr.Namespace,
+				Namespace: cr.Spec.ControlPlaneNamespace,
 			},
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ArgocdImageUpdaterSSHConfigCM,
-				Namespace: cr.Namespace,
+				Namespace: cr.Spec.ControlPlaneNamespace,
 			},
 		},
 	}
@@ -112,15 +112,15 @@ func (r *ReconcileClusterArgoCD) reconcileImageUpdaterControllerDisabled(cr *arg
 	// The individual reconcile functions will handle the 'NotFound' error when fetching for updates.
 	sa := &corev1.ServiceAccount{}
 	saName := getServiceAccountName(cr.Name, common.ArgoCDImageUpdaterControllerComponent)
-	_ = argoutil.FetchObject(r.Client, cr.Namespace, saName, sa)
+	_ = argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, saName, sa)
 	if sa.Name == "" { // if fetch failed
 		sa.Name = saName
-		sa.Namespace = cr.Namespace
+		sa.Namespace = cr.Spec.ControlPlaneNamespace
 	}
 
 	role := &rbacv1.Role{}
 	roleName := generateResourceName(common.ArgoCDImageUpdaterControllerComponent, cr)
-	_ = argoutil.FetchObject(r.Client, cr.Namespace, roleName, role)
+	_ = argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, roleName, role)
 	if role.Name == "" {
 		role.Name = roleName
 	}
@@ -171,13 +171,13 @@ func (r *ReconcileClusterArgoCD) reconcileImageUpdaterControllerDisabled(cr *arg
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ArgocdImageUpdaterConfigCM,
-				Namespace: cr.Namespace,
+				Namespace: cr.Spec.ControlPlaneNamespace,
 			},
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ArgocdImageUpdaterSSHConfigCM,
-				Namespace: cr.Namespace,
+				Namespace: cr.Spec.ControlPlaneNamespace,
 			},
 		},
 	}
@@ -196,7 +196,7 @@ func (r *ReconcileClusterArgoCD) reconcileImageUpdaterServiceAccount(cr *argopro
 
 	sa := newServiceAccountWithName(common.ArgoCDImageUpdaterControllerComponent, cr)
 
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, sa.Name, sa); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, sa.Name, sa); err != nil {
 		if !errors.IsNotFound(err) {
 			return nil, fmt.Errorf("failed to get the serviceAccount associated with %s : %s", sa.Name, err)
 		}
@@ -472,7 +472,7 @@ func (r *ReconcileClusterArgoCD) reconcileImageUpdaterDeployment(cr *argoproj.Cl
 
 func (r *ReconcileClusterArgoCD) reconcileRoleHelper(cr *argoproj.ClusterArgoCD, desiredRole client.Object) (client.Object, error) {
 	existingRole := reflect.New(reflect.TypeOf(desiredRole).Elem()).Interface().(client.Object)
-	namespace := cr.Namespace
+	namespace := cr.Spec.ControlPlaneNamespace
 
 	switch r := desiredRole.(type) {
 	case *rbacv1.Role:
@@ -557,7 +557,7 @@ func (r *ReconcileClusterArgoCD) reconcileRoleBindingHelper(cr *argoproj.Cluster
 		return fmt.Errorf("unsupported type for reconcileRoleBindingResource resource, got %T", desiredRoleBinding)
 	}
 
-	namespace := cr.Namespace
+	namespace := cr.Spec.ControlPlaneNamespace
 	if _, ok := desiredRoleBinding.(*rbacv1.ClusterRoleBinding); ok {
 		namespace = ""
 	}
@@ -643,7 +643,7 @@ func (r *ReconcileClusterArgoCD) reconcileSecretConfigMapHelper(cr *argoproj.Clu
 	resourceExists := true
 	resourceType := reflect.TypeOf(desiredResource).Elem().Name()
 	existingResource := reflect.New(reflect.TypeOf(desiredResource).Elem()).Interface().(client.Object)
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, desiredResource.GetName(), existingResource); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, desiredResource.GetName(), existingResource); err != nil {
 		if !errors.IsNotFound(err) {
 			return fmt.Errorf("failed to get the %s associated with %s : %s", resourceType, desiredResource.GetName(), err)
 		}

@@ -347,7 +347,7 @@ func (r *ReconcileClusterArgoCD) getArgoServerURI(cr *argoproj.ClusterArgoCD) (s
 	// Use Ingress host if enabled
 	if cr.Spec.Server.Ingress.Enabled {
 		ing := newIngressWithSuffix("server", cr)
-		ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, ing.Name, ing)
+		ingressExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, ing.Name, ing)
 		if err != nil {
 			return "", err
 		}
@@ -359,7 +359,7 @@ func (r *ReconcileClusterArgoCD) getArgoServerURI(cr *argoproj.ClusterArgoCD) (s
 	if cr.Spec.Server.Route.Enabled && argoutil.IsRouteAPIAvailable() {
 		// Use Route host if available, override Ingress if both exist
 		route := newRouteWithSuffix("server", cr)
-		routeExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, route.Name, route)
+		routeExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, route.Name, route)
 		if err != nil {
 			return "", err
 		}
@@ -629,7 +629,7 @@ func getRedisServerAddress(cr *argoproj.ClusterArgoCD) string {
 
 	// If principal is enabled, then Argo CD server/repo server should be configured to use redis proxy from principal (argo cd agent)
 	if cr.Spec.ArgoCDAgent != nil && cr.Spec.ArgoCDAgent.Principal != nil && cr.Spec.ArgoCDAgent.Principal.IsEnabled() {
-		return argoutil.GenerateAgentPrincipalRedisProxyServiceName(cr.Name) + "." + cr.Namespace + ".svc.cluster.local:6379"
+		return argoutil.GenerateAgentPrincipalRedisProxyServiceName(cr.Name) + "." + cr.Spec.ControlPlaneNamespace + ".svc.cluster.local:6379"
 	}
 
 	if cr.Spec.HA.Enabled {
@@ -667,7 +667,7 @@ func nameWithSuffix(suffix string, cr *argoproj.ClusterArgoCD) string {
 // fqdnServiceRef will return the FQDN referencing a specific service name, as set up by the operator, with the
 // given port.
 func fqdnServiceRef(service string, port int, cr *argoproj.ClusterArgoCD) string {
-	return fmt.Sprintf("%s.%s.svc.cluster.local:%d", nameWithSuffix(service, cr), cr.Namespace, port)
+	return fmt.Sprintf("%s.%s.svc.cluster.local:%d", nameWithSuffix(service, cr), cr.Spec.ControlPlaneNamespace, port)
 }
 
 // InspectCluster will verify the availability of extra features available to the cluster, such as Prometheus and
@@ -708,7 +708,7 @@ func (r *ReconcileClusterArgoCD) reconcileCertificateAuthority(cr *argoproj.Clus
 
 func (r *ReconcileClusterArgoCD) redisShouldUseTLS(cr *argoproj.ClusterArgoCD) bool {
 	var tlsSecretObj corev1.Secret
-	tlsSecretName := types.NamespacedName{Namespace: cr.Namespace, Name: common.ArgoCDRedisServerTLSSecretName}
+	tlsSecretName := types.NamespacedName{Namespace: cr.Spec.ControlPlaneNamespace, Name: common.ArgoCDRedisServerTLSSecretName}
 	err := r.Get(context.TODO(), tlsSecretName, &tlsSecretObj)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -1023,7 +1023,7 @@ func (r *ReconcileClusterArgoCD) setResourceWatches(bldr *builder.Builder, clust
 				err := r.deleteNotificationsResources(newCR)
 				if err != nil {
 					log.Error(err, fmt.Sprintf("Failed to delete notifications controller resources for ArgoCD %s in namespace %s",
-						newCR.Name, newCR.Namespace))
+						newCR.Name, newCR.Spec.ControlPlaneNamespace))
 				}
 			}
 			return true
@@ -1351,7 +1351,7 @@ func getLogFormat(logField string) string {
 func (r *ReconcileClusterArgoCD) setManagedNamespaces(cr *argoproj.ClusterArgoCD) error {
 	namespaces := &corev1.NamespaceList{}
 	listOption := client.MatchingLabels{
-		common.ArgoCDManagedByLabel: cr.Namespace,
+		common.ArgoCDManagedByLabel: cr.Spec.ControlPlaneNamespace,
 	}
 
 	// get the list of namespaces managed by the Argo CD instance
@@ -1359,7 +1359,7 @@ func (r *ReconcileClusterArgoCD) setManagedNamespaces(cr *argoproj.ClusterArgoCD
 		return err
 	}
 
-	namespaces.Items = append(namespaces.Items, corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: cr.Namespace}})
+	namespaces.Items = append(namespaces.Items, corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: cr.Spec.ControlPlaneNamespace}})
 	r.ManagedNamespaces = namespaces
 	return nil
 }
@@ -1388,7 +1388,7 @@ func (r *ReconcileClusterArgoCD) setManagedSourceNamespaces(cr *argoproj.Cluster
 	r.ManagedSourceNamespaces = make(map[string]string)
 	namespaces := &corev1.NamespaceList{}
 	listOption := client.MatchingLabels{
-		common.ArgoCDManagedByClusterArgoCDLabel: cr.Namespace,
+		common.ArgoCDManagedByClusterArgoCDLabel: cr.Spec.ControlPlaneNamespace,
 	}
 
 	// get the list of namespaces managed by the Argo CD instance
@@ -1627,7 +1627,7 @@ func updateStatusAndConditionsOfArgoCD(ctx context.Context, condition metav1.Con
 	changed, newConditions := insertOrUpdateConditionsInSlice(condition, cr.Status.Conditions)
 
 	// get the latest version of argocd instance
-	if err := k8sClient.Get(ctx, types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
+	if err := k8sClient.Get(ctx, types.NamespacedName{Name: cr.Name, Namespace: cr.Spec.ControlPlaneNamespace}, cr); err != nil {
 		if apierrors.IsNotFound(err) {
 			// if ArgoCD CR no longer exists, there is no status update needed, so just return.
 			return nil
@@ -2129,7 +2129,7 @@ func (r *ReconcileClusterArgoCD) reconcileDeploymentHelper(cr *argoproj.ClusterA
 	deploymentChanged := false
 	explanation := ""
 	existingDeployment := &appsv1.Deployment{}
-	if err := r.Get(context.TODO(), types.NamespacedName{Name: desiredDeployment.Name, Namespace: cr.Namespace}, existingDeployment); err != nil {
+	if err := r.Get(context.TODO(), types.NamespacedName{Name: desiredDeployment.Name, Namespace: cr.Spec.ControlPlaneNamespace}, existingDeployment); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get the deployment associated with %s : %s", desiredDeployment.Name, err)
 		}

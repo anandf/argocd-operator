@@ -1939,7 +1939,7 @@ func TestReconcileArgoCD_reconcileRedisDeploymentWithoutTLS(t *testing.T) {
 
 	assert.NoError(t, r.reconcileRedisDeployment(cr, false))
 	d := &appsv1.Deployment{}
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, d))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, d))
 	got := d.Spec.Template.Spec.Containers[0].Args
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Reconciliation unsucessful: got: %v, want: %v", got, want)
@@ -1969,7 +1969,7 @@ func TestReconcileArgoCD_reconcileRedisDeploymentWithTLS(t *testing.T) {
 
 	assert.NoError(t, r.reconcileRedisDeployment(cr, true))
 	d := &appsv1.Deployment{}
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, d))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, d))
 	got := d.Spec.Template.Spec.Containers[0].Args
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Reconciliation unsucessful: got: %v, want: %v", got, want)
@@ -1992,7 +1992,7 @@ func TestReconcileArgoCD_reconcileRedisDeployment(t *testing.T) {
 
 	assert.NoError(t, r.reconcileRedisDeployment(cr, false))
 	d := &appsv1.Deployment{}
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, d))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, d))
 	assert.Equal(t, int32(3), *d.Spec.Replicas)
 }
 
@@ -2013,14 +2013,14 @@ func TestReconcileArgoCD_reconcileRedisDeployment_testImageUpgrade(t *testing.T)
 	// Verify redis deployment
 	assert.NoError(t, r.reconcileRedisDeployment(cr, false))
 	existing := &appsv1.Deployment{}
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, existing))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, existing))
 
 	// Verify Image upgrade
 	t.Setenv("ARGOCD_REDIS_IMAGE", "docker.io/redis/redis:latest")
 	assert.NoError(t, r.reconcileRedisDeployment(cr, false))
 
 	newRedis := &appsv1.Deployment{}
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, newRedis))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, newRedis))
 	assert.Equal(t, newRedis.Spec.Template.Spec.Containers[0].Image, "docker.io/redis/redis:latest")
 }
 
@@ -2087,14 +2087,14 @@ func TestReconcileRedisDeployment_serviceAccountNameUpdate(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			existing := &appsv1.Deployment{}
-			assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, existing))
+			assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, existing))
 
 			existing.Spec.Template.Spec.ServiceAccountName = test.SA
 			assert.NoError(t, cl.Update(context.TODO(), existing))
 			assert.NoError(t, r.reconcileRedisDeployment(cr, false))
 
 			newRedis := &appsv1.Deployment{}
-			assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, newRedis))
+			assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, newRedis))
 			assert.Equal(t, newRedis.Spec.Template.Spec.ServiceAccountName, test.expectedSA)
 		})
 	}
@@ -2747,14 +2747,14 @@ func TestReconcileArgoCD_reconcileRedisWithRemote(t *testing.T) {
 
 	d := &appsv1.Deployment{}
 
-	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, d),
+	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, d),
 		"deployments.apps \""+cr.Name+"-redis\" not found")
 
 	// once remote is set to nil, reconciliation should trigger deployment resource creation
 	cr.Spec.Redis.Remote = nil
 
 	assert.NoError(t, r.reconcileRedisDeployment(cr, false))
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Namespace}, d))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-redis", Namespace: cr.Spec.ControlPlaneNamespace}, d))
 }
 
 func TestReconcileArgoCD_reconcileRepoServerWithRemote(t *testing.T) {
@@ -2774,14 +2774,14 @@ func TestReconcileArgoCD_reconcileRepoServerWithRemote(t *testing.T) {
 
 	d := &appsv1.Deployment{}
 
-	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Namespace}, d),
+	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Spec.ControlPlaneNamespace}, d),
 		"deployments.apps \""+cr.Name+"-repo-server\" not found")
 
 	// once remote is set to nil, reconciliation should trigger deployment resource creation
 	cr.Spec.Repo.Remote = nil
 
 	assert.NoError(t, r.reconcileRepoDeployment(cr, false))
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Namespace}, d))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Spec.ControlPlaneNamespace}, d))
 }
 
 func Test_getRolloutInitContainer(t *testing.T) {
@@ -2874,14 +2874,14 @@ func TestReconcileArgoCD_reconcileRepoServerWithFipsEnabled(t *testing.T) {
 
 	d := &appsv1.Deployment{}
 
-	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Namespace}, d),
+	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Spec.ControlPlaneNamespace}, d),
 		"deployments.apps \""+cr.Name+"-repo-server\" not found")
 
 	// once remote is set to nil, reconciliation should trigger deployment resource creation
 	cr.Spec.Repo.Remote = nil
 
 	assert.NoError(t, r.reconcileRepoDeployment(cr, false))
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Namespace}, d))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Spec.ControlPlaneNamespace}, d))
 	foundEnv := false
 	for _, env := range d.Spec.Template.Spec.Containers[0].Env {
 		if env.Name == "GODEBUG" {
@@ -2909,14 +2909,14 @@ func TestReconcileArgoCD_reconcileRepoServerWithFipsDisabled(t *testing.T) {
 
 	d := &appsv1.Deployment{}
 
-	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Namespace}, d),
+	assert.ErrorContains(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Spec.ControlPlaneNamespace}, d),
 		"deployments.apps \""+cr.Name+"-repo-server\" not found")
 
 	// once remote is set to nil, reconciliation should trigger deployment resource creation
 	cr.Spec.Repo.Remote = nil
 
 	assert.NoError(t, r.reconcileRepoDeployment(cr, false))
-	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Namespace}, d))
+	assert.NoError(t, r.Get(context.TODO(), types.NamespacedName{Name: cr.Name + "-repo-server", Namespace: cr.Spec.ControlPlaneNamespace}, d))
 	foundEnv := false
 	for _, env := range d.Spec.Template.Spec.Containers[0].Env {
 		if env.Name == "GODEBUG" {

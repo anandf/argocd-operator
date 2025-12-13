@@ -34,7 +34,7 @@ func newServiceAccount(cr *argoproj.ClusterArgoCD) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -108,7 +108,7 @@ func (r *ReconcileClusterArgoCD) reconcileServiceAccount(name string, cr *argopr
 
 	// Attempt to retrieve the ServiceAccount
 	exists := true
-	if err := argoutil.FetchObject(r.Client, cr.Namespace, sa.Name, sa); err != nil {
+	if err := argoutil.FetchObject(r.Client, cr.Spec.ControlPlaneNamespace, sa.Name, sa); err != nil {
 		if !errors.IsNotFound(err) {
 			return nil, err
 		}

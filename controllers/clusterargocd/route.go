@@ -44,7 +44,7 @@ func newRoute(cr *argoproj.ClusterArgoCD) *routev1.Route {
 	return &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -91,7 +91,7 @@ func (r *ReconcileClusterArgoCD) reconcileRoutes(cr *argoproj.ClusterArgoCD) err
 // reconcileGrafanaRoute will ensure that the ArgoCD Grafana Route is present.
 func (r *ReconcileClusterArgoCD) reconcileGrafanaRoute(cr *argoproj.ClusterArgoCD) error {
 	route := newRouteWithSuffix("grafana", cr)
-	rExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, route.Name, route)
+	rExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, route.Name, route)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (r *ReconcileClusterArgoCD) reconcileGrafanaRoute(cr *argoproj.ClusterArgoC
 // reconcilePrometheusRoute will ensure that the ArgoCD Prometheus Route is present.
 func (r *ReconcileClusterArgoCD) reconcilePrometheusRoute(cr *argoproj.ClusterArgoCD) error {
 	route := newRouteWithSuffix("prometheus", cr)
-	rExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, route.Name, route)
+	rExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, route.Name, route)
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func (r *ReconcileClusterArgoCD) reconcilePrometheusRoute(cr *argoproj.ClusterAr
 func (r *ReconcileClusterArgoCD) reconcileServerRoute(cr *argoproj.ClusterArgoCD) error {
 
 	route := newRouteWithSuffix("server", cr)
-	found, err := argoutil.IsObjectFound(r.Client, cr.Namespace, route.Name, route)
+	found, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, route.Name, route)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func (r *ReconcileClusterArgoCD) reconcileServerRoute(cr *argoproj.ClusterArgoCD
 		}
 
 		tlsSecret := &corev1.Secret{}
-		isTLSSecretFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, common.ArgoCDServerTLSSecretName, tlsSecret)
+		isTLSSecretFound, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, common.ArgoCDServerTLSSecretName, tlsSecret)
 		if err != nil {
 			return err
 		}
@@ -329,7 +329,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetControllerWebhookRoute(c
 	baseName := nameWithSuffix(common.ApplicationSetControllerWebhookSuffix, cr)
 	route := newRouteWithName(baseName, cr)
 
-	found, err := argoutil.IsObjectFound(r.Client, cr.Namespace, route.Name, route)
+	found, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, route.Name, route)
 	if err != nil {
 		return err
 	}
@@ -372,7 +372,7 @@ func (r *ReconcileClusterArgoCD) reconcileApplicationSetControllerWebhookRoute(c
 		host = cr.Spec.ApplicationSet.WebhookServer.Host
 	} else {
 		// Generate the default host
-		baseHost := fmt.Sprintf("%s-%s-%s", cr.Name, common.ApplicationSetControllerWebhookSuffix, cr.Namespace)
+		baseHost := fmt.Sprintf("%s-%s-%s", cr.Name, common.ApplicationSetControllerWebhookSuffix, cr.Spec.ControlPlaneNamespace)
 		ingressConfig := &configv1.Ingress{}
 		err := r.Get(context.TODO(), client.ObjectKey{Name: "cluster"}, ingressConfig)
 		if err != nil {
@@ -526,7 +526,7 @@ func (r *ReconcileClusterArgoCD) overrideRouteTLS(tls *routev1.TLSConfig, route 
 	// Send an event when deprecated field key and certificate is used
 	if tls.Key != "" || tls.Certificate != "" {
 		// Emit event for each instance providing users with warning message for `.tls.key` & `tls.certificate` subfields if not emitted already
-		if currentInstanceEventEmissionStatus, ok := DeprecationEventEmissionTracker[cr.Namespace]; !ok || !currentInstanceEventEmissionStatus.TLSInsecureWarningEmitted {
+		if currentInstanceEventEmissionStatus, ok := DeprecationEventEmissionTracker[cr.Spec.ControlPlaneNamespace]; !ok || !currentInstanceEventEmissionStatus.TLSInsecureWarningEmitted {
 			err := argoutil.CreateEvent(r.Client, "Warning", "Insecure field Used", ".tls.key and .tls.certificate are insecure in ArgoCD CR and not recommended. Use .tls.externalCertificate to reference a TLS secret instead.", "InsecureFields", cr.ObjectMeta, cr.TypeMeta)
 			if err != nil {
 				return err
@@ -537,7 +537,7 @@ func (r *ReconcileClusterArgoCD) overrideRouteTLS(tls *routev1.TLSConfig, route 
 			} else {
 				currentInstanceEventEmissionStatus.TLSInsecureWarningEmitted = true
 			}
-			DeprecationEventEmissionTracker[cr.Namespace] = currentInstanceEventEmissionStatus
+			DeprecationEventEmissionTracker[cr.Spec.ControlPlaneNamespace] = currentInstanceEventEmissionStatus
 		}
 
 		// These fields are deprecated in favor of using `.tls.externalCertificate` to reference a Kubernetes TLS secret.

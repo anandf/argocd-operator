@@ -62,7 +62,7 @@ func (r *ReconcileClusterArgoCD) reconcileSSO(cr *argoproj.ClusterArgoCD, argocd
 
 		if isError {
 			err := errors.New(illegalSSOConfiguration + errMsg)
-			log.Error(err, fmt.Sprintf("Illegal expression of SSO configuration detected for Argo CD %s in namespace %s. %s", cr.Name, cr.Namespace, errMsg))
+			log.Error(err, fmt.Sprintf("Illegal expression of SSO configuration detected for Argo CD %s in namespace %s. %s", cr.Name, cr.Spec.ControlPlaneNamespace, errMsg))
 			argocdStatus.SSO = "Failed"
 			return err
 		}
@@ -82,7 +82,7 @@ func (r *ReconcileClusterArgoCD) reconcileSSO(cr *argoproj.ClusterArgoCD, argocd
 			// `.spec.sso.dex` expressed without specifying SSO provider ==> conflict
 			errMsg := "Cannot specify SSO provider spec without specifying SSO provider type"
 			err := errors.New(illegalSSOConfiguration + errMsg)
-			log.Error(err, fmt.Sprintf("Cannot specify SSO provider spec without specifying SSO provider type for Argo CD %s in namespace %s.", cr.Name, cr.Namespace))
+			log.Error(err, fmt.Sprintf("Cannot specify SSO provider spec without specifying SSO provider type for Argo CD %s in namespace %s.", cr.Name, cr.Spec.ControlPlaneNamespace))
 			argocdStatus.SSO = "Failed"
 			return err
 		}
@@ -94,7 +94,7 @@ func (r *ReconcileClusterArgoCD) reconcileSSO(cr *argoproj.ClusterArgoCD, argocd
 
 		errMsg := fmt.Sprintf("Unsupported SSO provider type. Supported provider is %s", argoproj.SSOProviderTypeDex)
 		err := errors.New(illegalSSOConfiguration + errMsg)
-		log.Error(err, fmt.Sprintf("Unsupported SSO provider type for Argo CD %s in namespace %s.", cr.Name, cr.Namespace))
+		log.Error(err, fmt.Sprintf("Unsupported SSO provider type for Argo CD %s in namespace %s.", cr.Name, cr.Spec.ControlPlaneNamespace))
 		argocdStatus.SSO = "Failed"
 		return err
 	}

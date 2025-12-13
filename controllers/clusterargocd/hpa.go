@@ -36,7 +36,7 @@ func newHorizontalPodAutoscaler(cr *argoproj.ClusterArgoCD) *autoscaling.Horizon
 	return &autoscaling.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -73,7 +73,7 @@ func (r *ReconcileClusterArgoCD) reconcileServerHPA(cr *argoproj.ClusterArgoCD) 
 	}
 
 	existingHPA := newHorizontalPodAutoscalerWithSuffix("server", cr)
-	hpaExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, existingHPA.Name, existingHPA)
+	hpaExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, existingHPA.Name, existingHPA)
 	if err != nil {
 		return err
 	}

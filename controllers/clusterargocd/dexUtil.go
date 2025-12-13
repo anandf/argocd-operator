@@ -62,7 +62,7 @@ func (r *ReconcileClusterArgoCD) getDexOAuthRedirectURI(cr *argoproj.ClusterArgo
 
 // getDexOAuthClientID will return the OAuth client ID for the given ArgoCD.
 func getDexOAuthClientID(cr *argoproj.ClusterArgoCD) string {
-	return fmt.Sprintf("system:serviceaccount:%s:%s", cr.Namespace, fmt.Sprintf("%s-%s", cr.Name, common.ArgoCDDefaultDexServiceAccountName))
+	return fmt.Sprintf("system:serviceaccount:%s:%s", cr.Spec.ControlPlaneNamespace, fmt.Sprintf("%s-%s", cr.Name, common.ArgoCDDefaultDexServiceAccountName))
 }
 
 // getDexResources will return the ResourceRequirements for the Dex container.

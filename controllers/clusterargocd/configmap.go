@@ -282,7 +282,7 @@ func newConfigMap(cr *argoproj.ClusterArgoCD) *corev1.ConfigMap {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cr.Name,
-			Namespace: cr.Namespace,
+			Namespace: cr.Spec.ControlPlaneNamespace,
 			Labels:    argoutil.LabelsForCluster(cr),
 		},
 	}
@@ -344,7 +344,7 @@ func (r *ReconcileClusterArgoCD) reconcileConfigMaps(cr *argoproj.ClusterArgoCD,
 func (r *ReconcileClusterArgoCD) reconcileCAConfigMap(cr *argoproj.ClusterArgoCD) error {
 	cm := newConfigMapWithName(getCAConfigMapName(cr), cr)
 
-	configMapExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, cm)
+	configMapExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, cm)
 	if err != nil {
 		return err
 	}
@@ -353,7 +353,7 @@ func (r *ReconcileClusterArgoCD) reconcileCAConfigMap(cr *argoproj.ClusterArgoCD
 	}
 
 	caSecret := argoutil.NewSecretWithSuffix(cr, common.ArgoCDCASuffix)
-	caSecretExists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, caSecret.Name, caSecret)
+	caSecretExists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, caSecret.Name, caSecret)
 	if err != nil {
 		return err
 	}
@@ -516,7 +516,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoConfigMap(cr *argoproj.ClusterArgo
 	}
 
 	existingCM := &corev1.ConfigMap{}
-	found, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, existingCM)
+	found, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, existingCM)
 	if err != nil {
 		return err
 	}
@@ -594,7 +594,7 @@ func (r *ReconcileClusterArgoCD) reconcileGrafanaDashboards(cr *argoproj.Cluster
 func (r *ReconcileClusterArgoCD) reconcileRBAC(cr *argoproj.ClusterArgoCD) error {
 	cm := newConfigMapWithName(common.ArgoCDRBACConfigMapName, cr)
 
-	found, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, cm)
+	found, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, cm)
 	if err != nil {
 		return err
 	}
@@ -724,7 +724,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAHealthConfigMap(cr *argoproj.Cl
 	}
 	if !cr.Spec.HA.Enabled {
 		existingCM := &corev1.ConfigMap{}
-		exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, existingCM)
+		exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, existingCM)
 		if err != nil {
 			return err
 		}
@@ -741,7 +741,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAHealthConfigMap(cr *argoproj.Cl
 	}
 
 	existingCM := &corev1.ConfigMap{}
-	exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, existingCM)
+	exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, existingCM)
 	if err != nil {
 		return err
 	}
@@ -773,7 +773,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAConfigMap(cr *argoproj.ClusterA
 	if !cr.Spec.HA.Enabled {
 
 		existingCM := &corev1.ConfigMap{}
-		exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, existingCM)
+		exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, existingCM)
 		if err != nil {
 			return err
 		}
@@ -791,7 +791,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAConfigMap(cr *argoproj.ClusterA
 	}
 
 	existingCM := &corev1.ConfigMap{}
-	exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, existingCM)
+	exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, existingCM)
 	if err != nil {
 		return err
 	}
@@ -812,7 +812,7 @@ func (r *ReconcileClusterArgoCD) reconcileRedisHAConfigMap(cr *argoproj.ClusterA
 func (r *ReconcileClusterArgoCD) recreateRedisHAConfigMap(cr *argoproj.ClusterArgoCD, useTLSForRedis bool) error {
 	cm := newConfigMapWithName(common.ArgoCDRedisHAConfigMapName, cr)
 
-	exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, cm)
+	exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, cm)
 	if err != nil {
 		return err
 	}
@@ -828,7 +828,7 @@ func (r *ReconcileClusterArgoCD) recreateRedisHAConfigMap(cr *argoproj.ClusterAr
 func (r *ReconcileClusterArgoCD) recreateRedisHAHealthConfigMap(cr *argoproj.ClusterArgoCD, useTLSForRedis bool) error {
 	cm := newConfigMapWithName(common.ArgoCDRedisHAHealthConfigMapName, cr)
 
-	exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, cm)
+	exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, cm)
 	if err != nil {
 		return err
 	}
@@ -844,7 +844,7 @@ func (r *ReconcileClusterArgoCD) recreateRedisHAHealthConfigMap(cr *argoproj.Clu
 // reconcileSSHKnownHosts will ensure that the ArgoCD SSH Known Hosts ConfigMap is present.
 func (r *ReconcileClusterArgoCD) reconcileSSHKnownHosts(cr *argoproj.ClusterArgoCD) error {
 	cm := newConfigMapWithName(common.ArgoCDKnownHostsConfigMapName, cr)
-	exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, cm)
+	exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, cm)
 	if err != nil {
 		return err
 	}
@@ -866,7 +866,7 @@ func (r *ReconcileClusterArgoCD) reconcileSSHKnownHosts(cr *argoproj.ClusterArgo
 // reconcileTLSCerts will ensure that the ArgoCD TLS Certs ConfigMap is present.
 func (r *ReconcileClusterArgoCD) reconcileTLSCerts(cr *argoproj.ClusterArgoCD) error {
 	cm := newConfigMapWithName(common.ArgoCDTLSCertsConfigMapName, cr)
-	exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, cm)
+	exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, cm)
 	if err != nil {
 		return err
 	}
@@ -886,7 +886,7 @@ func (r *ReconcileClusterArgoCD) reconcileTLSCerts(cr *argoproj.ClusterArgoCD) e
 // reconcileGPGKeysConfigMap creates a gpg-keys config map
 func (r *ReconcileClusterArgoCD) reconcileGPGKeysConfigMap(cr *argoproj.ClusterArgoCD) error {
 	cm := newConfigMapWithName(common.ArgoCDGPGKeysConfigMapName, cr)
-	exists, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, cm)
+	exists, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, cm)
 	if err != nil {
 		return err
 	}
@@ -921,7 +921,7 @@ func (r *ReconcileClusterArgoCD) reconcileArgoCmdParamsConfigMap(cr *argoproj.Cl
 	}
 
 	existingCM := &corev1.ConfigMap{}
-	isFound, err := argoutil.IsObjectFound(r.Client, cr.Namespace, cm.Name, existingCM)
+	isFound, err := argoutil.IsObjectFound(r.Client, cr.Spec.ControlPlaneNamespace, cm.Name, existingCM)
 	if err != nil {
 		return err
 	}
