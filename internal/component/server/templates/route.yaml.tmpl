@@ -1,0 +1,49 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Name }}-{{ .Component }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- if .Annotations }}
+  annotations:
+    {{- range $key, $value := .Annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .Extra.RouteHost }}
+  host: {{ .Extra.RouteHost | quote }}
+  {{- end }}
+  port:
+    targetPort: {{ .Extra.TargetPort }}
+  tls:
+    termination: {{ .Extra.TLSTermination }}
+    insecureEdgeTerminationPolicy: Redirect
+    {{- if .Extra.TLSCertificate }}
+    certificate: |
+{{ .Extra.TLSCertificate | indent 6 }}
+    {{- end }}
+    {{- if .Extra.TLSKey }}
+    key: |
+{{ .Extra.TLSKey | indent 6 }}
+    {{- end }}
+    {{- if .Extra.TLSCACertificate }}
+    caCertificate: |
+{{ .Extra.TLSCACertificate | indent 6 }}
+    {{- end }}
+    {{- if .Extra.TLSDestinationCACertificate }}
+    destinationCACertificate: |
+{{ .Extra.TLSDestinationCACertificate | indent 6 }}
+    {{- end }}
+  to:
+    kind: Service
+    name: {{ .Name }}-{{ .Component }}
+    weight: 100
+  {{- if .Extra.WildcardPolicy }}
+  wildcardPolicy: {{ .Extra.WildcardPolicy }}
+  {{- else }}
+  wildcardPolicy: None
+  {{- end }}

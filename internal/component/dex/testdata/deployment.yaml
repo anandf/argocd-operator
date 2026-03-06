@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/part-of: argocd
+  name: argocd-dex-server
+  namespace: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-dex-server
+  template:
+    metadata:
+      annotations:
+        argocds.argoproj.io/name: argocd
+        argocds.argoproj.io/namespace: argocd
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        app.kubernetes.io/name: argocd
+        app.kubernetes.io/part-of: argocd
+    spec:
+      containers:
+      - args:
+        - rundex
+        command:
+        - /shared/argocd-dex
+        image: ghcr.io/dexidp/dex:v2.35.3
+        imagePullPolicy: IfNotPresent
+        name: dex
+        ports:
+        - containerPort: 5556
+          name: http
+          protocol: TCP
+        - containerPort: 5557
+          name: grpc
+          protocol: TCP
+        - containerPort: 5558
+          name: metrics
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /shared
+          name: static-files
+        - mountPath: /tmp
+          name: dex-config
+        - mountPath: /tmp/tls/tls.crt
+          name: tls-certs
+          subPath: tls.crt
+        - mountPath: /tmp/tls/tls.key
+          name: tls-certs
+          subPath: tls.key
+      initContainers:
+      - command:
+        - cp
+        - -n
+        - /usr/local/bin/argocd
+        - /shared/argocd-dex
+        image: quay.io/argoproj/argocd:v2.7.0
+        imagePullPolicy: IfNotPresent
+        name: copyutil
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /shared
+          name: static-files
+      serviceAccountName: argocd-dex-server
+      volumes:
+      - emptyDir: {}
+        name: static-files
+      - configMap:
+          name: argocd-dex-server
+        name: dex-config
+      - name: tls-certs
+        secret:
+          optional: true
+          secretName: argocd-dex-server-tls

@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
+	"github.com/argoproj-labs/argocd-operator/internal/platform"
 
 	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
 )
@@ -62,6 +63,7 @@ func makeTestReconciler(client client.Client, sch *runtime.Scheme, k8sClient kub
 		LocalUsers: &LocalUsersInfo{
 			TokenRenewalTimers: map[string]*TokenRenewalTimer{},
 		},
+		Platform: platform.NewPlatform(client, sch),
 	}
 }
 

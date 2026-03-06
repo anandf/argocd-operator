@@ -1,0 +1,149 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-{{ .Component }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    app.kubernetes.io/component: {{ .Component }}
+  {{- if .Annotations }}
+  annotations:
+    {{- range $key, $value := .Annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .Extra.Replicas }}
+  replicas: {{ .Extra.Replicas }}
+  {{- end }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Name }}-{{ .Component }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Name }}-{{ .Component }}
+        app.kubernetes.io/component: {{ .Component }}
+        {{- range $key, $value := .Labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ .ServiceAccount }}
+      containers:
+      - name: argocd-notifications-controller
+        image: {{ .Image }}
+        imagePullPolicy: {{ .Extra.ImagePullPolicy }}
+        command:
+        {{- range .Extra.Command }}
+        - {{ . | quote }}
+        {{- end }}
+        {{- if .Extra.Env }}
+        env:
+        {{- range .Extra.Env }}
+        - name: {{ .Name }}
+          {{- if .Value }}
+          value: {{ .Value | quote }}
+          {{- end }}
+          {{- if .ValueFrom }}
+          valueFrom:
+            {{- if .ValueFrom.SecretKeyRef }}
+            secretKeyRef:
+              name: {{ .ValueFrom.SecretKeyRef.Name }}
+              key: {{ .ValueFrom.SecretKeyRef.Key }}
+              {{- if .ValueFrom.SecretKeyRef.Optional }}
+              optional: {{ .ValueFrom.SecretKeyRef.Optional }}
+              {{- end }}
+            {{- end }}
+            {{- if .ValueFrom.ConfigMapKeyRef }}
+            configMapKeyRef:
+              name: {{ .ValueFrom.ConfigMapKeyRef.Name }}
+              key: {{ .ValueFrom.ConfigMapKeyRef.Key }}
+              {{- if .ValueFrom.ConfigMapKeyRef.Optional }}
+              optional: {{ .ValueFrom.ConfigMapKeyRef.Optional }}
+              {{- end }}
+            {{- end }}
+            {{- if .ValueFrom.FieldRef }}
+            fieldRef:
+              fieldPath: {{ .ValueFrom.FieldRef.FieldPath }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+        workingDir: /app
+        ports:
+        - containerPort: 9001
+          name: metrics
+          protocol: TCP
+        {{- if .Extra.Resources }}
+        resources:
+          {{- if .Extra.Resources.Limits }}
+          limits:
+            {{- range $key, $value := .Extra.Resources.Limits }}
+            {{ $key }}: {{ $value }}
+            {{- end }}
+          {{- end }}
+          {{- if .Extra.Resources.Requests }}
+          requests:
+            {{- range $key, $value := .Extra.Resources.Requests }}
+            {{ $key }}: {{ $value }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        livenessProbe:
+          tcpSocket:
+            port: 9001
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - mountPath: /app/config/tls
+          name: tls-certs
+        - mountPath: /app/config/tls/redis
+          name: argocd-repo-server-tls
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        kubernetes.io/os: linux
+      {{- if .Extra.NodeSelector }}
+        {{- range $key, $value := .Extra.NodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Extra.Tolerations }}
+      tolerations:
+      {{- range .Extra.Tolerations }}
+      - key: {{ .Key | quote }}
+        {{- if .Operator }}
+        operator: {{ .Operator | quote }}
+        {{- end }}
+        {{- if .Value }}
+        value: {{ .Value | quote }}
+        {{- end }}
+        {{- if .Effect }}
+        effect: {{ .Effect | quote }}
+        {{- end }}
+        {{- if .TolerationSeconds }}
+        tolerationSeconds: {{ .TolerationSeconds }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+      volumes:
+      - name: tls-certs
+        configMap:
+          name: argocd-tls-certs-cm
+          optional: true
+      - name: argocd-repo-server-tls
+        secret:
+          secretName: argocd-repo-server-tls
+          optional: true

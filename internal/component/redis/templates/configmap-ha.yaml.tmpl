@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-redis-ha-configmap
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- if .Annotations }}
+  annotations:
+    {{- range $key, $value := .Annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+data:
+  haproxy.cfg: |
+{{ .Extra.HAProxyConfig | indent 4 }}
+  haproxy_init.sh: |
+{{ .Extra.HAProxyInitScript | indent 4 }}
+  init.sh: |
+{{ .Extra.InitScript | indent 4 }}
+  redis.conf: |
+{{ .Extra.RedisConf | indent 4 }}
+  sentinel.conf: |
+{{ .Extra.SentinelConf | indent 4 }}

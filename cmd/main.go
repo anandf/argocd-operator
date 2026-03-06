@@ -24,7 +24,7 @@ import (
 	goruntime "runtime"
 	"strings"
 
-	"github.com/argoproj/argo-cd/v3/util/env"
+	"github.com/argoproj/argo-cd/v2/util/env"
 	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -39,10 +39,10 @@ import (
 	"github.com/argoproj-labs/argocd-operator/controllers/argocd"
 	"github.com/argoproj-labs/argocd-operator/controllers/argocdexport"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
-
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"github.com/argoproj-labs/argocd-operator/internal/platform"
 
 	notificationsConfig "github.com/argoproj-labs/argocd-operator/controllers/notificationsconfiguration"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -93,9 +93,9 @@ func main() {
 	var probeAddr string
 	var labelSelectorFlag string
 
-	var secureMetrics = false
-	var enableHTTP2 = false
-	var skipControllerNameValidation = true
+	secureMetrics := false
+	enableHTTP2 := false
+	skipControllerNameValidation := true
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", fmt.Sprintf(":%d", common.OperatorMetricsPort), "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -106,7 +106,7 @@ func main() {
 	flag.BoolVar(&enableHTTP2, "enable-http2", enableHTTP2, "If HTTP/2 should be enabled for the metrics and webhook servers.")
 	flag.BoolVar(&secureMetrics, "metrics-secure", secureMetrics, "If the metrics endpoint should be served securely.")
 
-	//Configure log level
+	// Configure log level
 	logLevelStr := strings.ToLower(os.Getenv("LOG_LEVEL"))
 	logLevel := zapcore.InfoLevel
 	switch logLevelStr {
@@ -268,6 +268,7 @@ func main() {
 		setupLog.Error(err, "Failed to initialize Kubernetes client")
 		os.Exit(1)
 	}
+
 	if err = (&argocd.ReconcileArgoCD{
 		Client:        client,
 		Scheme:        mgr.GetScheme(),
@@ -277,6 +278,7 @@ func main() {
 			TokenRenewalTimers: map[string]*argocd.TokenRenewalTimer{},
 		},
 		FipsConfigChecker: argoutil.NewLinuxFipsConfigChecker(),
+		Platform:          platform.NewPlatform(client, mgr.GetScheme()),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ArgoCD")
 		os.Exit(1)
@@ -348,7 +350,7 @@ func getWatchNamespace() (string, error) {
 	// WatchNamespaceEnvVar is the constant for env variable WATCH_NAMESPACE
 	// which specifies the Namespace to watch.
 	// An empty value means the operator is running with cluster scope.
-	var watchNamespaceEnvVar = "WATCH_NAMESPACE"
+	watchNamespaceEnvVar := "WATCH_NAMESPACE"
 
 	ns, found := os.LookupEnv(watchNamespaceEnvVar)
 	if !found {

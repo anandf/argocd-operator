@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/part-of: argocd
+  name: argocd-repo-server
+  namespace: argocd
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  template:
+    metadata:
+      annotations:
+        argocds.argoproj.io/name: argocd
+        argocds.argoproj.io/namespace: argocd
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        app.kubernetes.io/name: argocd
+        app.kubernetes.io/part-of: argocd
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - command:
+        - --redis
+        - argocd-redis.argocd.svc.cluster.local:6379
+        - --loglevel
+        - info
+        - --logformat
+        - text
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: admin.password
+              name: argocd-redis-initial-password
+        image: quay.io/argoproj/argocd:v2.7.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz?full=true
+            port: 8084
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+        name: argocd-repo-server
+        ports:
+        - containerPort: 8081
+          name: server
+          protocol: TCP
+        - containerPort: 8084
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8084
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /app/config/ssh
+          name: ssh-known-hosts
+        - mountPath: /app/config/tls
+          name: tls-certs
+        - mountPath: /app/config/gpg/source
+          name: gpg-keys
+        - mountPath: /app/config/gpg/keys
+          name: gpg-keyring
+        - mountPath: /app/config/reposerver/tls
+          name: argocd-repo-server-tls
+        - mountPath: /tmp
+          name: tmp
+        - mountPath: /home/argocd/cmp-server/plugins
+          name: plugins
+      initContainers:
+      - command:
+        - cp
+        - -n
+        - /usr/local/bin/argocd-cmp-server
+        - /var/run/argocd/argocd-cmp-server
+        image: quay.io/argoproj/argocd:v2.7.0
+        imagePullPolicy: IfNotPresent
+        name: copyutil
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /var/run/argocd
+          name: plugins
+      serviceAccountName: argocd-repo-server
+      volumes:
+      - configMap:
+          name: argocd-ssh-known-hosts-cm
+        name: ssh-known-hosts
+      - configMap:
+          name: argocd-tls-certs-cm
+        name: tls-certs
+      - configMap:
+          name: argocd-gpg-keys-cm
+        name: gpg-keys
+      - emptyDir: {}
+        name: gpg-keyring
+      - emptyDir: {}
+        name: tmp
+      - name: argocd-repo-server-tls
+        secret:
+          optional: true
+          secretName: argocd-repo-server-tls
+      - emptyDir: {}
+        name: plugins

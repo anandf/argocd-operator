@@ -1,0 +1,249 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Name }}-redis-ha-server
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: {{ .Extra.Replicas }}
+  podManagementPolicy: OrderedReady
+  serviceName: {{ .Name }}-redis-ha
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Name }}-redis-ha
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Name }}-redis-ha
+        {{- range $key, $value := .Labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- if .Annotations }}
+      annotations:
+        {{- range $key, $value := .Annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .ServiceAccount }}
+      terminationGracePeriodSeconds: 60
+      {{- if .Extra.IsOpenShift }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      {{- else }}
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      {{- end }}
+      initContainers:
+        - name: config-init
+          image: {{ .Image }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "IfNotPresent" }}
+          {{- if .Extra.IsOpenShift }}
+          command:
+            - sh
+          {{- end }}
+          args:
+            {{- if .Extra.IsOpenShift }}
+            - /readonly-config/init.sh
+            {{- else }}
+            - /readonly-config/init.sh
+            {{- end }}
+          env:
+            - name: SENTINEL_ID_0
+              value: 3c0d9c0320bb34888c2df5757c718ce6ca992ce6
+            - name: SENTINEL_ID_1
+              value: 40000915ab58c3fa8fd888fb8b24711944e6cbb4
+            - name: SENTINEL_ID_2
+              value: 2bbec7894d954a8af3bb54d13eaec53cb024e2ca
+            - name: AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Name }}-redis-initial-password
+                  key: admin.password
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+          volumeMounts:
+            - name: config
+              mountPath: /readonly-config
+              readOnly: true
+            - name: data
+              mountPath: /data
+            {{- if .Extra.UseTLS }}
+            - name: redis-tls
+              mountPath: /app/config/redis/tls
+            {{- end }}
+      containers:
+        - name: redis
+          image: {{ .Image }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "IfNotPresent" }}
+          command:
+            - redis-server
+          args:
+            {{- if .Extra.IsOpenShift }}
+            - /data/conf/redis.conf
+            {{- else }}
+            - /data/conf/redis.conf
+            {{- end }}
+          env:
+            - name: AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Name }}-redis-initial-password
+                  key: admin.password
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 15
+            successThreshold: 1
+            failureThreshold: 5
+            exec:
+              command:
+                - sh
+                - /health/redis_liveness.sh
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 15
+            successThreshold: 1
+            failureThreshold: 5
+            exec:
+              command:
+                - sh
+                - /health/redis_readiness.sh
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          {{- if .Extra.Resources }}
+          resources:
+            {{- if .Extra.Resources.Limits }}
+            limits:
+              {{- range $key, $value := .Extra.Resources.Limits }}
+              {{ $key }}: "{{ $value }}"
+              {{- end }}
+            {{- end }}
+            {{- if .Extra.Resources.Requests }}
+            requests:
+              {{- range $key, $value := .Extra.Resources.Requests }}
+              {{ $key }}: "{{ $value }}"
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: health
+              mountPath: /health
+            {{- if .Extra.UseTLS }}
+            - name: redis-tls
+              mountPath: /app/config/redis/tls
+            {{- end }}
+        - name: sentinel
+          image: {{ .Image }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "IfNotPresent" }}
+          command:
+            - redis-sentinel
+          args:
+            {{- if .Extra.IsOpenShift }}
+            - /data/conf/sentinel.conf
+            {{- else }}
+            - /data/conf/sentinel.conf
+            {{- end }}
+          env:
+            - name: AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Name }}-redis-initial-password
+                  key: admin.password
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  {{- if .Extra.UseTLS }}
+                  - sleep 30; redis-cli -p 26379 --tls --cacert /app/config/redis/tls/tls.crt sentinel reset argocd
+                  {{- else }}
+                  - sleep 30; redis-cli -p 26379 sentinel reset argocd
+                  {{- end }}
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 15
+            successThreshold: 1
+            failureThreshold: 5
+            exec:
+              command:
+                - sh
+                - /health/sentinel_liveness.sh
+          ports:
+            - name: sentinel
+              containerPort: 26379
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: health
+              mountPath: /health
+            {{- if .Extra.UseTLS }}
+            - name: redis-tls
+              mountPath: /app/config/redis/tls
+            {{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: {{ .Name }}-redis-ha
+              topologyKey: kubernetes.io/hostname
+      {{- if .Extra.NodeSelector }}
+      nodeSelector:
+        {{- range $key, $value := .Extra.NodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Extra.Tolerations }}
+      tolerations:
+        {{- toYaml .Extra.Tolerations | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-redis-ha-configmap
+        - name: health
+          configMap:
+            name: {{ .Name }}-redis-ha-health-configmap
+            defaultMode: 0755
+        - name: data
+          emptyDir: {}
+        {{- if .Extra.UseTLS }}
+        - name: redis-tls
+          secret:
+            secretName: {{ .Extra.TLSSecretName }}
+            optional: true
+        {{- end }}

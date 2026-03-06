@@ -3,6 +3,7 @@ module github.com/argoproj-labs/argocd-operator
 go 1.25.5
 
 require (
+	github.com/argoproj/argo-cd/v2 v2.14.21
 	github.com/argoproj/argo-cd/v3 v3.3.2
 	github.com/argoproj/gitops-engine v0.7.1-0.20251217140045-5baed5604d2d
 	github.com/cert-manager/cert-manager v1.19.4
@@ -12,6 +13,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/openshift/api v0.0.0-20240906151052-5d963dce87aa
+	github.com/operator-framework/api v0.36.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sethvargo/go-password v0.3.1
@@ -38,6 +40,7 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/swag/jsonname v0.25.1 // indirect
+	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
@@ -104,7 +107,7 @@ require (
 	github.com/go-openapi/jsonreference v0.21.3 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/go-redis/cache/v9 v9.0.0 // indirect
-	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
+	github.com/go-task/slim-sprig/v3 v3.0.0
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect

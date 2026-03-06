@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/part-of: argocd
+  name: argocd-redis
+  namespace: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-redis
+  template:
+    metadata:
+      annotations:
+        argocds.argoproj.io/name: argocd
+        argocds.argoproj.io/namespace: argocd
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        app.kubernetes.io/name: argocd
+        app.kubernetes.io/part-of: argocd
+    spec:
+      containers:
+      - args:
+        - --save
+        - ""
+        - --appendonly
+        - "no"
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        - --tls-port
+        - "6379"
+        - --port
+        - "0"
+        - --tls-cert-file
+        - /app/config/redis/tls/tls.crt
+        - --tls-key-file
+        - /app/config/redis/tls/tls.key
+        - --tls-auth-clients
+        - "no"
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: admin.password
+              name: argocd-redis-initial-password
+        image: public.ecr.aws/docker/library/redis:7.0.15-alpine
+        imagePullPolicy: IfNotPresent
+        name: redis
+        ports:
+        - containerPort: 6379
+          name: redis
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /app/config/redis/tls
+          name: redis-tls
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      serviceAccountName: argocd-redis
+      volumes:
+      - name: redis-tls
+        secret:
+          optional: true
+          secretName: argocd-operator-redis-tls

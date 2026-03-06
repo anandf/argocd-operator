@@ -27,6 +27,7 @@ import (
 	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
 	"github.com/argoproj-labs/argocd-operator/common"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
+	"github.com/argoproj-labs/argocd-operator/internal/platform"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -97,6 +98,9 @@ type ReconcileArgoCD struct {
 	LocalUsers *LocalUsersInfo
 	// FipsConfigChecker checks if the deployment needs FIPS specific environment variables set.
 	FipsConfigChecker argoutil.FipsConfigChecker
+	// Platform provides the platform-specific component controllers and decorators.
+	// Initialized at startup based on build tags (Kubernetes or OpenShift).
+	Platform platform.Platform
 }
 
 var log = logr.Log.WithName("controller_argocd")
@@ -360,7 +364,7 @@ func (r *ReconcileArgoCD) internalReconcile(ctx context.Context, request ctrl.Re
 		}
 	}
 
-	if err := r.reconcileResources(argocd, argoCDStatus); err != nil {
+	if err := r.reconcileResources(ctx, argocd, argoCDStatus); err != nil {
 		// Error reconciling ArgoCD sub-resources - requeue the request.
 		return reconcile.Result{}, argocd, argoCDStatus, err
 	}

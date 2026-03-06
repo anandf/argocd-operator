@@ -33,6 +33,9 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 
+	"github.com/argoproj-labs/argocd-operator/internal/component/appsetcontroller"
+	"github.com/argoproj-labs/argocd-operator/internal/platform"
+
 	"github.com/argoproj/argo-cd/v3/util/glob"
 	"github.com/distribution/reference"
 	"github.com/go-logr/logr"
@@ -777,7 +780,7 @@ func (r *ReconcileArgoCD) redisShouldUseTLS(cr *argoproj.ArgoCD) bool {
 }
 
 // reconcileResources will reconcile common ArgoCD resources.
-func (r *ReconcileArgoCD) reconcileResources(cr *argoproj.ArgoCD, argocdStatus *argoproj.ArgoCDStatus) error {
+func (r *ReconcileArgoCD) reconcileResources(ctx context.Context, cr *argoproj.ArgoCD, argocdStatus *argoproj.ArgoCDStatus) error {
 
 	if err := r.ensureSourceNamespacesAllowed(cr); err != nil {
 		return err
@@ -789,140 +792,35 @@ func (r *ReconcileArgoCD) reconcileResources(cr *argoproj.ArgoCD, argocdStatus *
 		return err
 	}
 
-	log.Info("reconciling roles")
-	if err := r.reconcileRoles(cr); err != nil {
-		log.Info(err.Error())
-		return err
-	}
+	// Get all components from the platform
+	components := r.Platform.AllComponents()
 
-	log.Info("reconciling rolebindings")
-	if err := r.reconcileRoleBindings(cr); err != nil {
-		log.Info(err.Error())
-		return err
-	}
-
-	log.Info("reconciling service accounts")
-	if err := r.reconcileServiceAccounts(cr); err != nil {
-		log.Info(err.Error())
-		return err
-	}
-
-	log.Info("reconciling certificate authority")
-	if err := r.reconcileCertificateAuthority(cr); err != nil {
-		return err
-	}
-
-	log.Info("reconciling secrets")
-	if err := r.reconcileSecrets(cr); err != nil {
-		return err
-	}
-
-	useTLSForRedis := r.redisShouldUseTLS(cr)
-
-	log.Info("reconciling config maps")
-	if err := r.reconcileConfigMaps(cr, useTLSForRedis); err != nil {
-		return err
-	}
-
-	log.Info("reconciling local users")
-	if err := r.reconcileLocalUsers(cr); err != nil {
-		return err
-	}
-
-	log.Info("reconciling services")
-	if err := r.reconcileServices(cr); err != nil {
-		return err
-	}
-
-	log.Info("reconciling deployments")
-	if err := r.reconcileDeployments(cr, useTLSForRedis); err != nil {
-		return err
-	}
-
-	log.Info("reconciling statefulsets")
-	if err := r.reconcileStatefulSets(cr, useTLSForRedis); err != nil {
-		return err
-	}
-
-	log.Info("reconciling autoscalers")
-	if err := r.reconcileAutoscalers(cr); err != nil {
-		return err
-	}
-
-	log.Info("reconciling ingresses")
-	if err := r.reconcileIngresses(cr); err != nil {
-		return err
-	}
-
-	if argoutil.IsRouteAPIAvailable() {
-		log.Info("reconciling routes")
-		if err := r.reconcileRoutes(cr); err != nil {
-			return err
-		}
-	}
-
-	if IsPrometheusAPIAvailable() {
-		log.Info("reconciling prometheus")
-		if err := r.reconcilePrometheus(cr); err != nil {
-			return err
+	// Reconcile components in dependency order
+	for _, name := range platform.DefaultReconcileOrder {
+		comp, ok := components[name]
+		if !ok {
+			log.Info("component not found in platform, skipping", "component", string(name))
+			continue
 		}
 
-		// Reconciles prometheusRule created to alert based on argo-cd workload status
-		if err := r.reconcilePrometheusRule(cr); err != nil {
-			return err
+		// Set component-specific state before reconciliation
+		if name == platform.ComponentNameApplicationSet {
+			if appsetCtrl, ok := comp.(*appsetcontroller.ApplicationSetController); ok {
+				appsetCtrl.ManagedApplicationSetSourceNamespaces = r.ManagedApplicationSetSourceNamespaces
+			}
 		}
 
-		if err := r.reconcileMetricsServiceMonitor(cr); err != nil {
-			return err
+		if comp.IsEnabled(cr) {
+			log.Info("applying component", "component", string(name))
+			if err := comp.Ensure(ctx, cr); err != nil {
+				return fmt.Errorf("failed to apply %s: %w", string(name), err)
+			}
+		} else {
+			log.Info("removing component", "component", string(name))
+			if err := comp.Remove(ctx, cr); err != nil {
+				return fmt.Errorf("failed to remove %s: %w", string(name), err)
+			}
 		}
-
-		if err := r.reconcileRepoServerServiceMonitor(cr); err != nil {
-			return err
-		}
-
-		if err := r.reconcileServerMetricsServiceMonitor(cr); err != nil {
-			return err
-		}
-	}
-
-	// check ManagedApplicationSetSourceNamespaces for proper cleanup
-	if cr.Spec.ApplicationSet != nil || len(r.ManagedApplicationSetSourceNamespaces) > 0 {
-		log.Info("reconciling ApplicationSet controller")
-		if err := r.reconcileApplicationSetController(cr); err != nil {
-			return err
-		}
-	}
-
-	if !reflect.DeepEqual(cr.Spec.Notifications, argoproj.ArgoCDNotifications{}) || len(r.ManagedNotificationsSourceNamespaces) > 0 {
-		log.Info("reconciling Notifications controller")
-		if err := r.reconcileNotificationsController(cr); err != nil {
-			return err
-		}
-	}
-
-	if IsImageUpdaterAPIAvailable() {
-		log.Info("reconciling Image Updater controller")
-		if err := r.reconcileImageUpdaterController(cr); err != nil {
-			return err
-		}
-	} else {
-		log.Info("ImageUpdater CRD not found, skipping reconciliation of Image Updater controller. Please install argocd-image-updater CRD to use this feature.")
-	}
-
-	if err := r.reconcileRepoServerTLSSecret(cr, argocdStatus); err != nil {
-		return err
-	}
-
-	if err := r.reconcileRedisTLSSecret(cr, useTLSForRedis, argocdStatus); err != nil {
-		return err
-	}
-
-	if err := r.ReconcileNetworkPolicies(cr); err != nil {
-		return err
-	}
-
-	if err := r.reconcileArgoCDAgent(cr); err != nil {
-		return err
 	}
 
 	return nil

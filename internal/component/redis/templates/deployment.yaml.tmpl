@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}-{{ .Component }}
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Name }}-{{ .Component }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Name }}-{{ .Component }}
+        {{- range $key, $value := .Labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- if .Annotations }}
+      annotations:
+        {{- range $key, $value := .Annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ .ServiceAccount }}
+      {{- if not .Extra.IsOpenShift }}
+      securityContext:
+        runAsUser: 1000
+        runAsNonRoot: true
+      {{- end }}
+      containers:
+        - name: redis
+          image: {{ .Image }}
+          imagePullPolicy: {{ .Extra.ImagePullPolicy | default "IfNotPresent" }}
+          {{- if .Extra.IsOpenShift }}
+          command:
+            - redis-server
+          {{- end }}
+          args:
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+            - --requirepass
+            - $(REDIS_PASSWORD)
+            {{- if .Extra.IsOpenShift }}
+            - --protected-mode
+            - "no"
+            {{- end }}
+            {{- if .Extra.UseTLS }}
+            - --tls-port
+            - "6379"
+            - --port
+            - "0"
+            - --tls-cert-file
+            - /app/config/redis/tls/tls.crt
+            - --tls-key-file
+            - /app/config/redis/tls/tls.key
+            - --tls-auth-clients
+            - "no"
+            {{- end }}
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Name }}-redis-initial-password
+                  key: admin.password
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          {{- if .Extra.Resources }}
+          resources:
+            {{- if .Extra.Resources.Limits }}
+            limits:
+              {{- range $key, $value := .Extra.Resources.Limits }}
+              {{ $key }}: "{{ $value }}"
+              {{- end }}
+            {{- end }}
+            {{- if .Extra.Resources.Requests }}
+            requests:
+              {{- range $key, $value := .Extra.Resources.Requests }}
+              {{ $key }}: "{{ $value }}"
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Extra.UseTLS }}
+            - name: redis-tls
+              mountPath: /app/config/redis/tls
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+      {{- if .Extra.NodeSelector }}
+      nodeSelector:
+        {{- range $key, $value := .Extra.NodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Extra.Tolerations }}
+      tolerations:
+        {{- toYaml .Extra.Tolerations | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if .Extra.UseTLS }}
+        - name: redis-tls
+          secret:
+            secretName: {{ .Extra.TLSSecretName }}
+            optional: true
+        {{- end }}

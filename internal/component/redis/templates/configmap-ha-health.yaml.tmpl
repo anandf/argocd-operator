@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-redis-ha-health-configmap
+  namespace: {{ .Namespace }}
+  labels:
+    {{- range $key, $value := .Labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- if .Annotations }}
+  annotations:
+    {{- range $key, $value := .Annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+data:
+  redis_liveness.sh: |
+{{ .Extra.RedisLivenessScript | indent 4 }}
+  redis_readiness.sh: |
+{{ .Extra.RedisReadinessScript | indent 4 }}
+  sentinel_liveness.sh: |
+{{ .Extra.SentinelLivenessScript | indent 4 }}

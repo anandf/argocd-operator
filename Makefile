@@ -117,11 +117,31 @@ test: manifests generate fmt vet envtest ## Run tests.
 build: generate fmt vet ## Build manager binary.
 	go build -ldflags=$(LD_FLAGS) -o bin/manager cmd/main.go
 
+build-kubernetes: generate fmt vet ## Build manager binary for Kubernetes platform (default).
+	go build -tags='' -ldflags=$(LD_FLAGS) -o bin/manager-kubernetes cmd/main.go
+
+build-openshift: generate fmt vet ## Build manager binary for OpenShift platform.
+	go build -tags='openshift' -ldflags=$(LD_FLAGS) -o bin/manager-openshift cmd/main.go
+
+build-all-platforms: build-kubernetes build-openshift ## Build manager binaries for all platforms.
+
 run: manifests generate fmt vet ## Run a controller from your host.
 	REDIS_CONFIG_PATH="build/redis" go run -ldflags=$(LD_FLAGS) ./cmd/main.go
 
+run-kubernetes: manifests generate fmt vet ## Run a controller from your host (Kubernetes platform).
+	REDIS_CONFIG_PATH="build/redis" go run -tags='' -ldflags=$(LD_FLAGS) ./cmd/main.go
+
+run-openshift: manifests generate fmt vet ## Run a controller from your host (OpenShift platform).
+	REDIS_CONFIG_PATH="build/redis" go run -tags='openshift' -ldflags=$(LD_FLAGS) ./cmd/main.go
+
 docker-build: test ## Build docker image with the manager.
 	$(CONTAINER_RUNTIME) build --build-arg LD_FLAGS=$(LD_FLAGS) -t ${IMG} .
+
+docker-build-kubernetes: test ## Build docker image with the manager for Kubernetes platform.
+	$(CONTAINER_RUNTIME) build --build-arg LD_FLAGS=$(LD_FLAGS) --build-arg BUILD_TAGS='' -t ${IMG}-kubernetes .
+
+docker-build-openshift: test ## Build docker image with the manager for OpenShift platform.
+	$(CONTAINER_RUNTIME) build --build-arg LD_FLAGS=$(LD_FLAGS) --build-arg BUILD_TAGS='openshift' -t ${IMG}-openshift .
 
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_RUNTIME) push ${IMG}
