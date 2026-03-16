@@ -205,7 +205,7 @@ func (r *NotificationsController) reconcileNotificationsDeployment(ctx context.C
 	data := template.NewTemplateData(cr, cr.Namespace, cr.Name, componentName).
 		WithLabels(argoutil.LabelsForCluster(cr)).
 		WithAnnotations(common.DefaultAnnotations(cr.Name, cr.Namespace)).
-		WithServiceAccount(cr.Name + "-" + componentName).
+		WithServiceAccount(cr.Name+"-"+componentName).
 		WithImage(getNotificationsContainerImage(cr)).
 		WithExtra("ImagePullPolicy", string(argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy))).
 		WithExtra("Command", getNotificationsCommand(cr))

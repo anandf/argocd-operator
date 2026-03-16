@@ -57,11 +57,8 @@ spec:
             - {{ . | quote }}
             {{- end }}
           env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Name }}-redis-initial-password
-                  key: admin.password
+            - name: REDIS_CREDS_DIR_PATH
+              value: /app/config/redis-auth/
             {{- if .Extra.ExecTimeout }}
             - name: ARGOCD_EXEC_TIMEOUT
               value: "{{ .Extra.ExecTimeout }}"
@@ -128,6 +125,9 @@ spec:
               mountPath: /tmp
             - name: plugins
               mountPath: /home/argocd/cmp-server/plugins
+            - name: redis-auth
+              mountPath: /app/config/redis-auth
+              readOnly: true
             {{- if .Extra.VolumeMounts }}
             {{- range .Extra.VolumeMounts }}
             - name: {{ .Name }}
@@ -181,6 +181,10 @@ spec:
             optional: true
         - name: plugins
           emptyDir: {}
+        - name: redis-auth
+          secret:
+            secretName: {{ .Name }}-redis-initial-password
+            defaultMode: 0400
         {{- if .Extra.Volumes }}
         {{- range .Extra.Volumes }}
         - name: {{ .Name }}

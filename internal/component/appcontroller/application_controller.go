@@ -4,12 +4,6 @@ import (
 	"context"
 	"embed"
 
-	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
-	"github.com/argoproj-labs/argocd-operator/common"
-	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
-	"github.com/argoproj-labs/argocd-operator/internal/component"
-	"github.com/argoproj-labs/argocd-operator/internal/decorator"
-	"github.com/argoproj-labs/argocd-operator/internal/template"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +11,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logs "sigs.k8s.io/controller-runtime/pkg/log"
+
+	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
+	"github.com/argoproj-labs/argocd-operator/common"
+	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
+	"github.com/argoproj-labs/argocd-operator/internal/component"
+	"github.com/argoproj-labs/argocd-operator/internal/decorator"
+	"github.com/argoproj-labs/argocd-operator/internal/template"
 )
 
 const componentName = "application-controller"
@@ -147,6 +148,7 @@ func (r *ApplicationController) reconcileApplicationControllerServiceAccount(ctx
 	data := template.NewTemplateData(cr, cr.Namespace, cr.Name, componentName).
 		WithLabels(argoutil.LabelsForCluster(cr)).
 		WithAnnotations(common.DefaultAnnotations(cr.Name, cr.Namespace))
+	data.WithExtra("Replicas", 1)
 
 	obj, err := r.templateEngine.RenderManifest("serviceaccount.yaml.tmpl", data)
 	if err != nil {
@@ -264,7 +266,7 @@ func (r *ApplicationController) reconcileApplicationControllerStatefulSet(ctx co
 	data := template.NewTemplateData(cr, cr.Namespace, cr.Name, componentName).
 		WithLabels(argoutil.LabelsForCluster(cr)).
 		WithAnnotations(common.DefaultAnnotations(cr.Name, cr.Namespace)).
-		WithServiceAccount(cr.Name + "-argocd-" + componentName).
+		WithServiceAccount(cr.Name+"-argocd-"+componentName).
 		WithImage(component.GetArgoContainerImage(cr)).
 		WithExtra("ImagePullPolicy", string(argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy))).
 		WithExtra("Replicas", replicas)

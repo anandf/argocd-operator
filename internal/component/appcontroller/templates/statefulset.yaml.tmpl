@@ -13,7 +13,7 @@ spec:
     whenDeleted: Retain
     whenScaled: Retain
   podManagementPolicy: OrderedReady
-  replicas: {{ .Replicas }}
+  replicas: {{ .Extra.Replicas }}
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -71,13 +71,10 @@ spec:
               optional: true
         - name: HOME
           value: /home/argocd
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: admin.password
-              name: {{ .Name }}-redis-initial-password
+        - name: REDIS_CREDS_DIR_PATH
+          value: /app/config/redis-auth/
         image: {{ .Image }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: {{ .Extra.ImagePullPolicy }}
         name: argocd-application-controller
         ports:
         - containerPort: 8082
@@ -119,6 +116,9 @@ spec:
           name: argocd-home
         - mountPath: /home/argocd/params
           name: argocd-cmd-params-cm
+        - mountPath: /app/config/redis-auth
+          name: redis-auth
+          readOnly: true
         - mountPath: /tmp
           name: argocd-application-controller-tmp
       dnsPolicy: ClusterFirst
@@ -155,6 +155,10 @@ spec:
           name: argocd-cmd-params-cm
           optional: true
         name: argocd-cmd-params-cm
+      - name: redis-auth
+        secret:
+          defaultMode: 420
+          secretName: {{ .Name }}-redis-initial-password
       - emptyDir: {}
         name: argocd-application-controller-tmp
   updateStrategy:

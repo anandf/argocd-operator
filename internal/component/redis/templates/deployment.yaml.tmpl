@@ -45,8 +45,8 @@ spec:
             - ""
             - --appendonly
             - "no"
-            - --requirepass
-            - $(REDIS_PASSWORD)
+            - --aclfile
+            - /app/config/redis-auth/users.acl
             {{- if .Extra.IsOpenShift }}
             - --protected-mode
             - "no"
@@ -63,12 +63,6 @@ spec:
             - --tls-auth-clients
             - "no"
             {{- end }}
-          env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Name }}-redis-initial-password
-                  key: admin.password
           ports:
             - name: redis
               containerPort: 6379
@@ -89,6 +83,9 @@ spec:
             {{- end }}
           {{- end }}
           volumeMounts:
+            - name: redis-auth
+              mountPath: /app/config/redis-auth
+              readOnly: true
             {{- if .Extra.UseTLS }}
             - name: redis-tls
               mountPath: /app/config/redis/tls
@@ -110,6 +107,10 @@ spec:
         {{- toYaml .Extra.Tolerations | nindent 8 }}
       {{- end }}
       volumes:
+        - name: redis-auth
+          secret:
+            secretName: {{ .Name }}-redis-initial-password
+            defaultMode: 0400
         {{- if .Extra.UseTLS }}
         - name: redis-tls
           secret:

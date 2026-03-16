@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/managed-by: argocd
-    app.kubernetes.io/name: argocd
     app.kubernetes.io/part-of: argocd
   name: argocd-redis
   namespace: argocd
@@ -19,7 +18,7 @@ spec:
         argocds.argoproj.io/namespace: argocd
       labels:
         app.kubernetes.io/managed-by: argocd
-        app.kubernetes.io/name: argocd
+        app.kubernetes.io/name: argocd-redis
         app.kubernetes.io/part-of: argocd
     spec:
       containers:
@@ -28,14 +27,8 @@ spec:
         - ""
         - --appendonly
         - "no"
-        - --requirepass
-        - $(REDIS_PASSWORD)
-        env:
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: admin.password
-              name: argocd-redis-initial-password
+        - --aclfile
+        - /app/config/redis-auth/users.acl
         image: public.ecr.aws/docker/library/redis:7.0.15-alpine
         imagePullPolicy: IfNotPresent
         name: redis
@@ -49,9 +42,16 @@ spec:
             drop:
             - ALL
           runAsNonRoot: true
-        volumeMounts: null
+        volumeMounts:
+        - mountPath: /app/config/redis-auth
+          name: redis-auth
+          readOnly: true
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
       serviceAccountName: argocd-redis
-      volumes: null
+      volumes:
+      - name: redis-auth
+        secret:
+          defaultMode: 256
+          secretName: argocd-redis-initial-password

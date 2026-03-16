@@ -163,7 +163,6 @@ func fqdnServiceRef(service string, port int, cr *argoproj.ArgoCD) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local:%d", fmt.Sprintf("%s-repo-server", cr.Name), cr.Namespace, port)
 }
 
-
 // GetLogLevel returns the log level for a specified component if it is set or returns the default log level if it is not set.
 func GetLogLevel(logField string) string {
 
@@ -224,7 +223,7 @@ func ApplyNodePlacement(data *template.TemplateData, np *argoproj.ArgoCDNodePlac
 // values in a map iteration within Go templates are not addressable and
 // String() won't be called. This struct pre-converts quantities to strings.
 type TemplateResources struct {
-	Limits  map[string]string
+	Limits   map[string]string
 	Requests map[string]string
 }
 
@@ -373,6 +372,45 @@ func AddKubernetesData(source map[string]string, live map[string]string) {
 				source[key] = value
 			}
 		}
+	}
+}
+
+const (
+	// RedisAuthVolumeName is the name of the volume used to mount Redis auth credentials.
+	RedisAuthVolumeName = "redis-auth"
+
+	// RedisAuthMountPath is the mount path for the Redis auth credentials volume.
+	RedisAuthMountPath = "/app/config/redis-auth/"
+)
+
+// RedisAuthVolume returns a Volume that sources the redis-initial-password Secret.
+func RedisAuthVolume(crName string) corev1.Volume {
+	defaultMode := int32(0400)
+	return corev1.Volume{
+		Name: RedisAuthVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName:  crName + "-redis-initial-password",
+				DefaultMode: &defaultMode,
+			},
+		},
+	}
+}
+
+// RedisAuthVolumeMount returns a read-only VolumeMount for the Redis auth credentials.
+func RedisAuthVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      RedisAuthVolumeName,
+		MountPath: RedisAuthMountPath,
+		ReadOnly:  true,
+	}
+}
+
+// RedisCredsEnvVar returns the REDIS_CREDS_DIR_PATH env var pointing to the mounted credentials.
+func RedisCredsEnvVar() corev1.EnvVar {
+	return corev1.EnvVar{
+		Name:  "REDIS_CREDS_DIR_PATH",
+		Value: RedisAuthMountPath,
 	}
 }
 

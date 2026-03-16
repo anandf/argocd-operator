@@ -303,7 +303,6 @@ vs-ssh.visualstudio.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7Hr1oTWqNqOlzGJOf
 // DefaultLabels returns the default set of labels for controllers.
 func DefaultLabels(name string) map[string]string {
 	return map[string]string{
-		ArgoCDKeyName:      name,
 		ArgoCDKeyPartOf:    ArgoCDAppName,
 		ArgoCDKeyManagedBy: name,
 	}

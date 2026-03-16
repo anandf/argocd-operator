@@ -5,6 +5,9 @@ import (
 	"embed"
 	"fmt"
 
+	"encoding/base64"
+	"strings"
+
 	argoproj "github.com/argoproj-labs/argocd-operator/api/v1beta1"
 	"github.com/argoproj-labs/argocd-operator/common"
 	"github.com/argoproj-labs/argocd-operator/controllers/argoutil"
@@ -12,11 +15,15 @@ import (
 	"github.com/argoproj-labs/argocd-operator/internal/decorator"
 	"github.com/argoproj-labs/argocd-operator/internal/template"
 	"github.com/go-logr/logr"
+	password "github.com/sethvargo/go-password/password"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logs "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -61,6 +68,11 @@ func (r *RedisController) IsEnabled(cr *argoproj.ArgoCD) bool {
 func (r *RedisController) Ensure(ctx context.Context, cr *argoproj.ArgoCD) error {
 	log := r.logWithValues(cr)
 	log.Info("reconciling redis component")
+
+	// Reconcile the redis initial password secret first (needed by all modes)
+	if err := r.reconcileRedisInitialPasswordSecret(ctx, cr); err != nil {
+		return err
+	}
 
 	// Determine if Redis HA mode is enabled
 	isHA := r.isRedisHAEnabled(cr)
@@ -162,6 +174,87 @@ func (r *RedisController) cleanupRedisHAResources(ctx context.Context, cr *argop
 	}
 
 	return nil
+}
+
+// reconcileRedisInitialPasswordSecret ensures the redis-initial-password Secret exists
+// with all required keys: admin.password (legacy), auth, auth_username, users.acl
+func (r *RedisController) reconcileRedisInitialPasswordSecret(ctx context.Context, cr *argoproj.ArgoCD) error {
+	log := r.logWithValues(cr)
+	log.Info("reconciling redis initial password secret")
+
+	secretName := cr.Name + "-redis-initial-password"
+
+	// Check if secret exists
+	existing := &corev1.Secret{}
+	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: cr.Namespace}, existing)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+	secretExists := err == nil
+
+	// If secret exists with all required keys, nothing to do
+	if secretExists && existing.Data != nil {
+		_, hasPwd := existing.Data[common.ArgoCDKeyAdminPassword]
+		_, hasAuth := existing.Data["auth"]
+		_, hasUsername := existing.Data["auth_username"]
+		_, hasAcl := existing.Data["users.acl"]
+		if hasPwd && hasAuth && hasUsername && hasAcl {
+			return nil
+		}
+	}
+
+	// Determine the password: preserve existing if upgrading, otherwise generate new
+	var pw string
+	if secretExists && existing.Data != nil {
+		if existingPw, ok := existing.Data[common.ArgoCDKeyAdminPassword]; ok {
+			pw = strings.TrimRight(string(existingPw), "\n")
+		}
+	}
+	if pw == "" {
+		generated, err := password.Generate(
+			common.RedisDefaultAdminPasswordLength,
+			common.RedisDefaultAdminPasswordNumDigits,
+			common.RedisDefaultAdminPasswordNumSymbols,
+			false, false)
+		if err != nil {
+			return fmt.Errorf("failed to generate redis admin password: %w", err)
+		}
+		pw = generated
+	}
+
+	usersACL := fmt.Sprintf("user default on >%s allchannels allkeys allcommands\n", pw)
+
+	// Build template data with base64-encoded values
+	data := template.NewTemplateData(cr, cr.Namespace, cr.Name, common.ArgoCDDefaultRedisSuffix).
+		WithLabels(argoutil.LabelsForCluster(cr)).
+		WithAnnotations(common.DefaultAnnotations(cr.Name, cr.Namespace)).
+		WithExtra("PasswordBase64", base64.StdEncoding.EncodeToString([]byte(pw))).
+		WithExtra("UsernameBase64", base64.StdEncoding.EncodeToString([]byte("default"))).
+		WithExtra("UsersACLBase64", base64.StdEncoding.EncodeToString([]byte(usersACL)))
+
+	obj, err := r.templateEngine.RenderManifest("secret.yaml.tmpl", data)
+	if err != nil {
+		return err
+	}
+
+	secret := &corev1.Secret{}
+	if err := template.ConvertToTyped(obj, secret); err != nil {
+		return err
+	}
+
+	if err := controllerutil.SetControllerReference(cr, secret, r.Scheme); err != nil {
+		return err
+	}
+
+	if secretExists {
+		log.Info("updating redis initial password secret with new keys")
+		existing.Data = secret.Data
+		existing.Labels = secret.Labels
+		return r.Client.Update(ctx, existing)
+	}
+
+	log.Info("creating redis initial password secret")
+	return r.Client.Create(ctx, secret)
 }
 
 // reconcileRedisStandalone reconciles Redis in standalone mode
@@ -369,8 +462,9 @@ func (r *RedisController) reconcileRedisDeployment(ctx context.Context, cr *argo
 	data := template.NewTemplateData(cr, cr.Namespace, cr.Name, common.ArgoCDDefaultRedisSuffix).
 		WithLabels(argoutil.LabelsForCluster(cr)).
 		WithAnnotations(common.DefaultAnnotations(cr.Name, cr.Namespace)).
-		WithServiceAccount(cr.Name + "-" + common.ArgoCDDefaultRedisSuffix).
+		WithServiceAccount(cr.Name+"-"+common.ArgoCDDefaultRedisSuffix).
 		WithImage(getRedisContainerImage(cr)).
+		WithExtra("ArgoCDImage", component.GetArgoContainerImage(cr)).
 		WithExtra("ImagePullPolicy", string(argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy))).
 		WithExtra("UseTLS", useTLS).
 		WithExtra("TLSSecretName", common.ArgoCDRedisServerTLSSecretName)
@@ -532,7 +626,7 @@ func (r *RedisController) reconcileRedisHAStatefulSet(ctx context.Context, cr *a
 	data := template.NewTemplateData(cr, cr.Namespace, cr.Name, "redis-ha").
 		WithLabels(argoutil.LabelsForCluster(cr)).
 		WithAnnotations(common.DefaultAnnotations(cr.Name, cr.Namespace)).
-		WithServiceAccount(cr.Name + "-redis-ha").
+		WithServiceAccount(cr.Name+"-redis-ha").
 		WithImage(getRedisHAContainerImage(cr)).
 		WithExtra("ImagePullPolicy", string(argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy))).
 		WithExtra("UseTLS", useTLS).
@@ -653,7 +747,7 @@ func (r *RedisController) reconcileRedisHAProxyDeployment(ctx context.Context, c
 	data := template.NewTemplateData(cr, cr.Namespace, cr.Name, "redis-ha").
 		WithLabels(argoutil.LabelsForCluster(cr)).
 		WithAnnotations(common.DefaultAnnotations(cr.Name, cr.Namespace)).
-		WithServiceAccount(cr.Name + "-redis-ha").
+		WithServiceAccount(cr.Name+"-redis-ha").
 		WithExtra("ImagePullPolicy", string(argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy))).
 		WithExtra("HAProxyImage", getRedisHAProxyContainerImage(cr)).
 		WithExtra("UseTLS", useTLS).

@@ -69,4 +69,3 @@ func getRepoServerCommand(cr *argoproj.ArgoCD) []string {
 
 	return cmd
 }
-

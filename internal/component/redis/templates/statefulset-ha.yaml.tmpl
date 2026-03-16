@@ -52,11 +52,7 @@ spec:
             - sh
           {{- end }}
           args:
-            {{- if .Extra.IsOpenShift }}
             - /readonly-config/init.sh
-            {{- else }}
-            - /readonly-config/init.sh
-            {{- end }}
           env:
             - name: SENTINEL_ID_0
               value: 3c0d9c0320bb34888c2df5757c718ce6ca992ce6
@@ -64,11 +60,6 @@ spec:
               value: 40000915ab58c3fa8fd888fb8b24711944e6cbb4
             - name: SENTINEL_ID_2
               value: 2bbec7894d954a8af3bb54d13eaec53cb024e2ca
-            - name: AUTH
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Name }}-redis-initial-password
-                  key: admin.password
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -81,6 +72,9 @@ spec:
               readOnly: true
             - name: data
               mountPath: /data
+            - name: redis-auth
+              mountPath: /app/config/redis-auth
+              readOnly: true
             {{- if .Extra.UseTLS }}
             - name: redis-tls
               mountPath: /app/config/redis/tls
@@ -92,17 +86,7 @@ spec:
           command:
             - redis-server
           args:
-            {{- if .Extra.IsOpenShift }}
             - /data/conf/redis.conf
-            {{- else }}
-            - /data/conf/redis.conf
-            {{- end }}
-          env:
-            - name: AUTH
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Name }}-redis-initial-password
-                  key: admin.password
           livenessProbe:
             initialDelaySeconds: 30
             periodSeconds: 15
@@ -153,6 +137,9 @@ spec:
               mountPath: /data
             - name: health
               mountPath: /health
+            - name: redis-auth
+              mountPath: /app/config/redis-auth
+              readOnly: true
             {{- if .Extra.UseTLS }}
             - name: redis-tls
               mountPath: /app/config/redis/tls
@@ -163,17 +150,7 @@ spec:
           command:
             - redis-sentinel
           args:
-            {{- if .Extra.IsOpenShift }}
             - /data/conf/sentinel.conf
-            {{- else }}
-            - /data/conf/sentinel.conf
-            {{- end }}
-          env:
-            - name: AUTH
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Name }}-redis-initial-password
-                  key: admin.password
           lifecycle:
             postStart:
               exec:
@@ -241,6 +218,10 @@ spec:
             defaultMode: 0755
         - name: data
           emptyDir: {}
+        - name: redis-auth
+          secret:
+            secretName: {{ .Name }}-redis-initial-password
+            defaultMode: 0400
         {{- if .Extra.UseTLS }}
         - name: redis-tls
           secret:

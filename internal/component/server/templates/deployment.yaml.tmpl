@@ -38,8 +38,10 @@ spec:
             - {{ . | quote }}
             {{- end }}
           {{- end }}
-          {{- if .Extra.Env }}
           env:
+            - name: REDIS_CREDS_DIR_PATH
+              value: /app/config/redis-auth/
+            {{- if .Extra.Env }}
             {{- range .Extra.Env }}
             - name: {{ .Name }}
               {{- if .Value }}
@@ -49,7 +51,7 @@ spec:
                 {{- toYaml .ValueFrom | nindent 16 }}
               {{- end }}
             {{- end }}
-          {{- end }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 8080
@@ -93,6 +95,9 @@ spec:
               mountPath: /app/config/server/tls
             - name: argocd-server-tls
               mountPath: /app/config/server/tls/https
+            - name: redis-auth
+              mountPath: /app/config/redis-auth
+              readOnly: true
             {{- if .Extra.VolumeMounts }}
             {{- range .Extra.VolumeMounts }}
             - name: {{ .Name }}
@@ -137,6 +142,10 @@ spec:
           secret:
             secretName: argocd-server-tls
             optional: true
+        - name: redis-auth
+          secret:
+            secretName: {{ .Name }}-redis-initial-password
+            defaultMode: 0400
         {{- if .Extra.Volumes }}
         {{- range .Extra.Volumes }}
         - name: {{ .Name }}

@@ -153,4 +153,3 @@ func AddSeccompProfileForOpenShift(client client.Client, podspec *corev1.PodSpec
 		}
 	}
 }
-

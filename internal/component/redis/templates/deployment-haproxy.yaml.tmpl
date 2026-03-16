@@ -64,8 +64,9 @@ spec:
               readOnly: true
             - name: data
               mountPath: /data
-            - name: redis-initial-pass
-              mountPath: /redis-initial-pass
+            - name: redis-auth
+              mountPath: /app/config/redis-auth
+              readOnly: true
             {{- if .Extra.UseTLS }}
             - name: redis-tls
               mountPath: /app/config/redis/tls
@@ -161,10 +162,10 @@ spec:
           emptyDir: {}
         - name: data
           emptyDir: {}
-        - name: redis-initial-pass
+        - name: redis-auth
           secret:
             secretName: {{ .Name }}-redis-initial-password
-            optional: true
+            defaultMode: 0400
         {{- if .Extra.UseTLS }}
         - name: redis-tls
           secret:

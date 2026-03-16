@@ -33,6 +33,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 
+	"github.com/argoproj-labs/argocd-operator/internal/component"
 	"github.com/argoproj-labs/argocd-operator/internal/component/appsetcontroller"
 	"github.com/argoproj-labs/argocd-operator/internal/platform"
 
@@ -789,6 +790,11 @@ func (r *ReconcileArgoCD) reconcileResources(ctx context.Context, cr *argoproj.A
 	log.Info("reconciling SSO")
 	if err := r.reconcileSSO(cr, argocdStatus); err != nil {
 		log.Info(err.Error())
+		return err
+	}
+
+	// Reconcile shared ConfigMaps before components (SSH known hosts, TLS certs, GPG keys)
+	if err := component.ReconcileSharedConfigMaps(ctx, r.Client, r.Scheme, cr); err != nil {
 		return err
 	}
 
