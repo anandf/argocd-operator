@@ -138,10 +138,7 @@ func (r *ReconcileArgoCD) reconcileRepoDeployment(cr *argocdoperatorv1beta1.Argo
 			return err
 		}
 		if fipsEnabled {
-			repoEnv = append(repoEnv, corev1.EnvVar{
-				Name:  "GODEBUG",
-				Value: "fips140=on",
-			})
+			repoEnv = argoutil.DecorateWithFIPSEnv(repoEnv)
 		}
 	}
 
@@ -208,12 +205,10 @@ func (r *ReconcileArgoCD) reconcileRepoDeployment(cr *argocdoperatorv1beta1.Argo
 	}
 
 	if !volumeMountOverridesTmpVolume {
-
 		repoServerVolumeMounts = append(repoServerVolumeMounts, corev1.VolumeMount{
 			Name:      "tmp",
 			MountPath: "/tmp",
 		})
-
 	}
 
 	if cr.Spec.Repo.VolumeMounts != nil {
