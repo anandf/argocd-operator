@@ -61,23 +61,17 @@ func DecorateWithFIPSEnv(in []corev1.EnvVar) []corev1.EnvVar {
 		Name:  "GODEBUG",
 		Value: "fips140=on",
 	}}, false)
-	for _, env := range mergedEnv {
-		if env.Name == "GODEBUG" {
-			if hasGodebugEntry(env.Value, "fips140=on") {
-				// GOLANG_FIPS and GODEBUG=fips140=on are both mutually exclusive.
-				// GOLANG_FIPS=1 is set by default, but it causes issues
-				// since we are explicitly setting GODEBUG=fips140=on to skip
-				// unsupported fips ssh algorithms in Argo CD.
-				// See https://github.com/argoproj/argo-cd/issues/24155,
-				// so we need to set GOLANG_FIPS=0 to avoid the conflict.
-				mergedEnv = EnvMerge(mergedEnv, []corev1.EnvVar{{
-					Name:  "GOLANG_FIPS",
-					Value: "0",
-				}}, false)
-			}
-			break
-		}
-	}
+
+	// GOLANG_FIPS and GODEBUG=fips140=on are both mutually exclusive.
+	// GOLANG_FIPS=1 is set by default, but it causes issues
+	// since we are explicitly setting GODEBUG=fips140=on to skip
+	// unsupported fips ssh algorithms in Argo CD.
+	// See https://github.com/argoproj/argo-cd/issues/24155,
+	// so we need to set GOLANG_FIPS=0 to avoid the conflict.
+	mergedEnv = ensureGoLangFips(mergedEnv, corev1.EnvVar{
+		Name:  "GOLANG_FIPS",
+		Value: "0",
+	})
 	return mergedEnv
 }
 
@@ -90,4 +84,21 @@ func hasGodebugEntry(godebugValue, entry string) bool {
 		}
 	}
 	return false
+}
+
+// ensureGoLangFips adds GOLANG_FIPS env variable and sets it to 0 only when GODEBUG has fips140=on
+func ensureGoLangFips(in []corev1.EnvVar, goLangFipsEnv corev1.EnvVar) []corev1.EnvVar {
+	for _, env := range in {
+		if env.Name == "GOLANG_FIPS" {
+			return in
+		}
+	}
+	for _, env := range in {
+		if env.Name == "GODEBUG" {
+			if hasGodebugEntry(env.Value, "fips140=on") {
+				return append(in, goLangFipsEnv)
+			}
+		}
+	}
+	return in
 }
