@@ -730,6 +730,7 @@ func (r *ReconcileArgoCD) reconcileApplicationControllerStatefulSet(cr *argoproj
 		Env:             controllerEnv,
 		Ports: []corev1.ContainerPort{
 			{
+				Name:          "metrics",
 				ContainerPort: 8082,
 			},
 		},

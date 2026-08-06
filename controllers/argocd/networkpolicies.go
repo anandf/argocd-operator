@@ -43,6 +43,15 @@ const (
 	ArgoCDApplicationSetControllerNetworkPolicy = "applicationset-controller-network-policy"
 	// ImageUpdaterNetworkPolicy is the name of the network policy which controls Image Updater traffic
 	ImageUpdaterNetworkPolicy = "image-updater-network-policy"
+
+	// NetworkPolicyGroupLabelSelectorKey is the key used for label selectors applied to namespace
+	NetworkPolicyGroupLabelSelectorKey = "network.openshift.io/policy-group"
+
+	// MonitoringLabelSelectorValue is the value used to select the namespace where the monitoring pods run
+	MonitoringLabelSelectorValue = "monitoring"
+
+	// IngressLabelSelectorValue is the value used to select the namespace where the ingress controller pods run
+	IngressLabelSelectorValue = "ingress"
 )
 
 func (r *ReconcileArgoCD) ReconcileNetworkPolicies(cr *argoproj.ArgoCD) error {
@@ -172,7 +181,7 @@ func (r *ReconcileArgoCD) ReconcileDexServerNetworkPolicy(cr *argoproj.ArgoCD) e
 			{
 				From: []networkingv1.NetworkPolicyPeer{
 					{
-						NamespaceSelector: &metav1.LabelSelector{},
+						NamespaceSelector: getMonitoringNamespaceLabelSelector(),
 					},
 				},
 				Ports: []networkingv1.NetworkPolicyPort{
@@ -273,17 +282,26 @@ func (r *ReconcileArgoCD) ReconcileApplicationSetControllerNetworkPolicy(cr *arg
 			{
 				From: []networkingv1.NetworkPolicyPeer{
 					{
-						NamespaceSelector: &metav1.LabelSelector{},
+						NamespaceSelector: getMonitoringNamespaceLabelSelector(),
+					},
+				},
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Protocol: TCPProtocol,
+						Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
+					},
+				},
+			},
+			{
+				From: []networkingv1.NetworkPolicyPeer{
+					{
+						NamespaceSelector: getIngressNamespaceLabelSelector(),
 					},
 				},
 				Ports: []networkingv1.NetworkPolicyPort{
 					{
 						Protocol: TCPProtocol,
 						Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 7000},
-					},
-					{
-						Protocol: TCPProtocol,
-						Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
 					},
 				},
 			},
@@ -645,7 +663,7 @@ func (r *ReconcileArgoCD) ReconcileNotificationsControllerNetworkPolicy(cr *argo
 			{
 				From: []networkingv1.NetworkPolicyPeer{
 					{
-						NamespaceSelector: &metav1.LabelSelector{},
+						NamespaceSelector: getMonitoringNamespaceLabelSelector(),
 					},
 				},
 				Ports: []networkingv1.NetworkPolicyPort{
@@ -826,7 +844,7 @@ func (r *ReconcileArgoCD) ReconcileArgoCDApplicationControllerNetworkPolicy(cr *
 			{
 				From: []networkingv1.NetworkPolicyPeer{
 					{
-						NamespaceSelector: &metav1.LabelSelector{},
+						NamespaceSelector: getMonitoringNamespaceLabelSelector(),
 					},
 				},
 				Ports: []networkingv1.NetworkPolicyPort{
@@ -968,7 +986,7 @@ func (r *ReconcileArgoCD) ReconcileArgoCDRepoServerNetworkPolicy(cr *argoproj.Ar
 			{
 				From: []networkingv1.NetworkPolicyPeer{
 					{
-						NamespaceSelector: &metav1.LabelSelector{},
+						NamespaceSelector: getMonitoringNamespaceLabelSelector(),
 					},
 				},
 				Ports: []networkingv1.NetworkPolicyPort{
@@ -1069,7 +1087,7 @@ func createImageUpdaterNetworkPolicy(cr *argoproj.ArgoCD, name string, ports ...
 			{
 				From: []networkingv1.NetworkPolicyPeer{
 					{
-						NamespaceSelector: &metav1.LabelSelector{},
+						NamespaceSelector: getIngressNamespaceLabelSelector(),
 					},
 				},
 				Ports: ingressPorts,
@@ -1133,6 +1151,36 @@ func returnNetworkPolicyHeaders(cr *argoproj.ArgoCD, NetworkPolicyName string) *
 			Name:      nameWithSuffix(NetworkPolicyName, cr),
 			Namespace: cr.Namespace,
 			Labels:    argoutil.LabelsForCluster(cr),
+		},
+	}
+}
+
+// getMonitoringNamespaceLabelSelector returns the namespace label selector for selecting
+// the namespace where prometheus related pods run.
+// for openshift, it is going to be network.openshift.io/policy-group: monitoring
+// for non-openshift clusters, all namespaces will be selected.
+func getMonitoringNamespaceLabelSelector() *metav1.LabelSelector {
+	if !IsOpenShiftCluster() {
+		return &metav1.LabelSelector{}
+	}
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			NetworkPolicyGroupLabelSelectorKey: MonitoringLabelSelectorValue,
+		},
+	}
+}
+
+// getIngressNamespaceLabelSelector returns the namespace label selector for selecting the
+// namespace where ingress controller related pods run.
+// for openshift clusters, it is going to be network.openshift.io/policy-group: ingress
+// for non-openshift clusters, all namespaces will be selected.
+func getIngressNamespaceLabelSelector() *metav1.LabelSelector {
+	if !IsOpenShiftCluster() {
+		return &metav1.LabelSelector{}
+	}
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			NetworkPolicyGroupLabelSelectorKey: IngressLabelSelectorValue,
 		},
 	}
 }
