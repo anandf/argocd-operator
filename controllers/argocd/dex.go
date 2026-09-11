@@ -426,10 +426,8 @@ func (r *ReconcileArgoCD) reconcileDexDeployment(cr *argoproj.ArgoCD) error {
 	}
 
 	deploy.Spec.Template.Spec.Containers = []corev1.Container{{
-		Command: []string{
-			"/shared/argocd-dex",
-			"rundex",
-		},
+		Command:         []string{"/bin/sh", "-c"},
+		Args:            argoutil.DexServerCustomStartupScript(),
 		Image:           getDexContainerImage(cr),
 		ImagePullPolicy: argoutil.GetImagePullPolicy(cr.Spec.ImagePullPolicy),
 		Name:            "dex",
@@ -462,8 +460,6 @@ func (r *ReconcileArgoCD) reconcileDexDeployment(cr *argoproj.ArgoCD) error {
 	}}
 
 	if UseDex(cr) && argoutil.IsDexEtcdStorageEnabled() {
-		deploy.Spec.Template.Spec.Containers[0].Command = []string{"/bin/sh", "-c"}
-		deploy.Spec.Template.Spec.Containers[0].Args = argoutil.DexServerCustomStartupScript()
 		deploy.Spec.Template.Spec.Containers = append(deploy.Spec.Template.Spec.Containers, corev1.Container{
 			Command: []string{
 				"etcd",

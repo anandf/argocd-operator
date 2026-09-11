@@ -64,6 +64,16 @@ while true; do
     fi
   done
 done`
+	etcdHealthCheckScriptlet = `MAX_RETRIES=10
+COUNT=0
+while [ "$COUNT" -lt "$MAX_RETRIES" ]; do
+COUNT=$((COUNT + 1))
+if (echo > /dev/tcp/127.0.0.1/2379) >/dev/null 2>&1; then
+echo "etcd port 2379 is open and accepting connections"
+break
+fi
+sleep 1
+done`
 )
 
 // IsDexEtcdStorageEnabled returns a feature flag which determines if the dex storage config
@@ -75,8 +85,9 @@ func IsDexEtcdStorageEnabled() bool {
 // DexServerCustomStartupScript returns the script that is required for generating dex config from `argocd-cm` config map,
 // updating the dex storage to kubernetes and generate TLS certs and start the dex server.
 func DexServerCustomStartupScript() []string {
+	storageType := getDexStorageType()
 	return []string{
-		fmt.Sprintf(customBootstrapScriptTemplate, getDexEtcdStorageHealthCheck(), awkScriptEtcdStorageType),
+		fmt.Sprintf(customBootstrapScriptTemplate, getDexStorageHealthCheck(storageType), getDexStorageModificationScript(storageType)),
 	}
 }
 
@@ -88,17 +99,27 @@ func getDexStorageType() string {
 	return DefaultDexStorageType
 }
 
-// getDexEtcdStorageHealthCheck returns the script to perform health check to see if etcd sidecar container
-// is started and accepting connections.
-func getDexEtcdStorageHealthCheck() string {
-	return `MAX_RETRIES=10
-	COUNT=0
-	while [ "$COUNT" -lt "$MAX_RETRIES" ]; do
-	  COUNT=$((COUNT + 1))
-	  if (echo > /dev/tcp/127.0.0.1/2379) >/dev/null 2>&1; then
-	    echo "etcd port 2379 is open and accepting connections"
-	    break
-	fi
-	sleep 1
-	done`
+// getDexStorageHealthCheck returns the script to perform health check to see if storage service is ready
+// and accepting connections.
+func getDexStorageHealthCheck(storageType string) string {
+	switch storageType {
+	case "etcd":
+		return etcdHealthCheckScriptlet
+	case "memory":
+		return ""
+	default:
+		return ""
+	}
+}
+
+// getDexStorageModificationScript returns the script to perform modifications to the dex configuration file to
+func getDexStorageModificationScript(storageType string) string {
+	switch storageType {
+	case "etcd":
+		return etcdHealthCheckScriptlet
+	case "memory":
+		return ""
+	default:
+		return ""
+	}
 }
