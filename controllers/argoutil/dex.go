@@ -22,6 +22,7 @@ import (
 const (
 	DefaultDexStorageType         = "etcd"
 	awkScriptEtcdStorageType      = "awk '/^storage:/ { print \"storage:\\n  type: etcd\\n  config:\\n    endpoints:\\n    - \\\"http://127.0.0.1:2379\\\"\\n    namespace: dex\"; skip=1; next } skip && /^[a-zA-Z0-9_-]+:/ { skip=0 } !skip' /tmp/base.yaml > /tmp/dex.yaml"
+	defaultNoopScriptlet          = "cp /tmp/base.yaml /tmp/dex.yaml"
 	customBootstrapScriptTemplate = `set -eo pipefail
 trap 'kill -TERM $DEX_PID 2>/dev/null; exit 0' INT TERM
 
@@ -118,8 +119,8 @@ func getDexStorageModificationScript(storageType string) string {
 	case "etcd":
 		return etcdHealthCheckScriptlet
 	case "memory":
-		return ""
+		return defaultNoopScriptlet
 	default:
-		return ""
+		return defaultNoopScriptlet
 	}
 }
