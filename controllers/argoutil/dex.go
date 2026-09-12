@@ -16,12 +16,10 @@ package argoutil
 
 import (
 	"fmt"
-	"os"
 )
 
 const (
-	DefaultDexStorageType         = "etcd"
-	awkScriptEtcdStorageType      = "awk '/^storage:/ { print \"storage:\\n  type: etcd\\n  config:\\n    endpoints:\\n    - \\\"http://127.0.0.1:2379\\\"\\n    namespace: dex\"; skip=1; next } skip && /^[a-zA-Z0-9_-]+:/ { skip=0 } !skip' /tmp/base.yaml > /tmp/dex.yaml"
+	DefaultDexStorageType         = "memory"
 	defaultNoopScriptlet          = "cp /tmp/base.yaml /tmp/dex.yaml"
 	customBootstrapScriptTemplate = `set -eo pipefail
 trap 'kill -TERM $DEX_PID 2>/dev/null; exit 0' INT TERM
@@ -65,62 +63,29 @@ while true; do
     fi
   done
 done`
-	etcdHealthCheckScriptlet = `MAX_RETRIES=10
-COUNT=0
-while [ "$COUNT" -lt "$MAX_RETRIES" ]; do
-COUNT=$((COUNT + 1))
-if (echo > /dev/tcp/127.0.0.1/2379) >/dev/null 2>&1; then
-echo "etcd port 2379 is open and accepting connections"
-break
-fi
-sleep 1
-done`
 )
-
-// IsDexEtcdStorageEnabled returns a feature flag which determines if the dex storage config
-// need to be overridden through env overrides. Returns false if explicitly disabled, true otherwise.
-func IsDexEtcdStorageEnabled() bool {
-	return getDexStorageType() == "etcd"
-}
 
 // DexServerCustomStartupScript returns the script that is required for generating dex config from `argocd-cm` config map,
 // updating the dex storage to kubernetes and generate TLS certs and start the dex server.
 func DexServerCustomStartupScript() []string {
 	storageType := getDexStorageType()
 	return []string{
-		fmt.Sprintf(customBootstrapScriptTemplate, getDexStorageHealthCheck(storageType), getDexStorageModificationScript(storageType)),
+		fmt.Sprintf(customBootstrapScriptTemplate, getDexStorageHealthCheckScriptlet(storageType), getDexStorageModificationScriptlet(storageType)),
 	}
 }
 
 // getDexStorageType returns the storage type that needs to be used for dex.
 func getDexStorageType() string {
-	if env, found := os.LookupEnv("ARGOCD_DEX_STORAGE_TYPE"); found {
-		return env
-	}
 	return DefaultDexStorageType
 }
 
 // getDexStorageHealthCheck returns the script to perform health check to see if storage service is ready
 // and accepting connections.
-func getDexStorageHealthCheck(storageType string) string {
-	switch storageType {
-	case "etcd":
-		return etcdHealthCheckScriptlet
-	case "memory":
-		return ""
-	default:
-		return ""
-	}
+func getDexStorageHealthCheckScriptlet(storageType string) string {
+	return ""
 }
 
 // getDexStorageModificationScript returns the script to perform modifications to the dex configuration file to
-func getDexStorageModificationScript(storageType string) string {
-	switch storageType {
-	case "etcd":
-		return etcdHealthCheckScriptlet
-	case "memory":
-		return defaultNoopScriptlet
-	default:
-		return defaultNoopScriptlet
-	}
+func getDexStorageModificationScriptlet(storageType string) string {
+	return defaultNoopScriptlet
 }
