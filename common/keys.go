@@ -314,8 +314,4 @@ const (
 	ArgoCDWebTerminalEnabledKey = "exec.enabled"
 	// ArgoCDWebTerminalEnabledDefaultValue is the default value for enabling the web terminal.
 	ArgoCDWebTerminalEnabledDefaultValue = false
-
-	// ArgoCDDexEtcdImageEnvName is the environment variable used to get the image
-	// of etcd to used for the Dex sidecar container when etcd storage is enabled.
-	ArgoCDDexEtcdImageEnvName = "ARGOCD_DEX_ETCD_IMAGE"
 )
